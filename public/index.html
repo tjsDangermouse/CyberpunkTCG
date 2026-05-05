@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyberpunk TCG — Card Database</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ─────────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      position: sticky;
+      top: 56px;
+      height: calc(100vh - 56px);
+      overflow-y: auto;
+    }
+
+    .sidebar h3 {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+    .chip {
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-size: 0.75rem;
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: var(--text-dim);
+      background: transparent;
+      transition: all 0.15s;
+    }
+
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+    .chip.active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+    .chip[data-type="UNIT"].active    { background: var(--type-unit); border-color: var(--type-unit); }
+    .chip[data-type="GEAR"].active    { background: var(--type-gear); border-color: var(--type-gear); }
+    .chip[data-type="PROGRAM"].active { background: var(--type-program); border-color: var(--type-program); }
+    .chip[data-type="LEGEND"].active  { background: var(--type-legend); border-color: var(--type-legend); }
+    .chip[data-type="HERO"].active    { background: var(--type-hero); border-color: var(--type-hero); }
+    .chip[data-type="EVENT"].active   { background: var(--type-event); border-color: var(--type-event); }
+
+    .range-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; }
+    .range-row label { color: var(--text-dim); width: 50px; }
+    .range-row input[type=range] { flex: 1; accent-color: var(--accent); }
+    .range-val { color: var(--accent); width: 24px; text-align: right; font-family: var(--font-display); font-weight: 700; }
+
+    .sidebar-count { font-size: 0.8rem; color: var(--text-dim); }
+    .sidebar-count span { color: var(--accent); font-weight: 700; }
+
+    /* ── Main ────────────────────────────────────────────── */
+    .main { padding: 1.5rem; }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap { flex: 1; min-width: 200px; max-width: 360px; position: relative; }
+    .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; }
+    .search-wrap .input { padding-left: 2rem; }
+
+    .view-toggles { display: flex; gap: 0.25rem; }
+    .view-btn { padding: 0.4rem; border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer; border-radius: 2px; }
+    .view-btn.active, .view-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Card Grid ───────────────────────────────────────── */
+    #card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+
+    #card-grid.list-view {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+
+    /* ── Card ────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+      position: relative;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 229, 255, 0.15);
+    }
+
+    .card-img-wrap {
+      aspect-ratio: 63 / 88;
+      overflow: hidden;
+      background: var(--surface2);
+      position: relative;
+    }
+
+    .card-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s;
+    }
+
+    .card:hover .card-img-wrap img { transform: scale(1.04); }
+
+    .card-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      font-size: 2.5rem;
+    }
+
+    .card-body { padding: 0.6rem; }
+
+    .card-name {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: 0.2rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-sub {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-bottom: 0.4rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-stats {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin-top: 0.4rem;
+    }
+
+    .card-stats .stat { min-width: 28px; }
+    .card-stats .stat-value { font-size: 0.85rem; }
+    .card-stats .stat-label { font-size: 0.55rem; }
+
+    /* List view card */
+    #card-grid.list-view .card {
+      display: grid;
+      grid-template-columns: 60px 1fr auto;
+      gap: 0;
+    }
+
+    #card-grid.list-view .card-img-wrap {
+      aspect-ratio: unset;
+      height: 84px;
+      width: 60px;
+      flex-shrink: 0;
+    }
+
+    #card-grid.list-view .card-body {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    #card-grid.list-view .card-name { font-size: 1rem; white-space: unset; }
+    #card-grid.list-view .card-sub  { display: none; }
+    #card-grid.list-view .card-stats { margin-top: 0; }
+
+    /* ── No results ──────────────────────────────────────── */
+    .no-results {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem;
+      color: var(--text-dim);
+    }
+
+    .no-results p { margin-top: 0.5rem; }
+
+    /* ── Loading ─────────────────────────────────────────── */
+    .loading {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem;
+      color: var(--accent);
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      letter-spacing: 0.2em;
+    }
+
+    /* ── Modal ───────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      max-width: 720px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      transform: translateY(20px);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal-img {
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-img img {
+      width: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .modal-content { padding: 1.5rem; overflow-y: auto; }
+
+    .modal-name {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.1;
+      margin-bottom: 0.25rem;
+    }
+
+    .modal-sub {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .modal-stats {
+      display: flex;
+      gap: 1.25rem;
+      padding: 0.75rem;
+      background: var(--surface2);
+      border-radius: 2px;
+      margin-bottom: 1rem;
+    }
+
+    .modal-stats .stat-value { font-size: 1.3rem; }
+
+    .modal-section { margin-bottom: 1rem; }
+
+    .modal-section h4 {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-section p { font-size: 0.85rem; line-height: 1.6; }
+
+    .modal-keywords { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .modal-keyword {
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-size: 0.75rem;
+      font-family: var(--font-display);
+      color: var(--accent);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 2px;
+      font-size: 1rem;
+      z-index: 1;
+    }
+    .modal-close:hover { color: var(--accent2); border-color: var(--accent2); }
+
+    .modal-meta { font-size: 0.75rem; color: var(--text-dim); }
+    .modal-meta a { font-size: 0.75rem; }
+
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+      .modal { grid-template-columns: 1fr; }
+      .modal-img { height: 240px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-logo">Cyber<span>punk</span> TCG</div>
+  <nav>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Cards</a></li>
+      <li><a href="print.html">Print</a></li>
+    </ul>
+  </nav>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-count">Showing <span id="count">—</span> cards</div>
+
+    <div class="filter-group">
+      <h3>Search</h3>
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input class="input" id="search" placeholder="Search cards…" type="text" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Type</h3>
+      <div class="filter-chips" id="type-filters">
+        <button class="chip active" data-type="ALL">All</button>
+        <button class="chip" data-type="UNIT">Unit</button>
+        <button class="chip" data-type="GEAR">Gear</button>
+        <button class="chip" data-type="PROGRAM">Program</button>
+        <button class="chip" data-type="LEGEND">Legend</button>
+        <button class="chip" data-type="HERO">Hero</button>
+        <button class="chip" data-type="EVENT">Event</button>
+        <button class="chip" data-type="LOCATION">Location</button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Set</h3>
+      <div class="filter-chips" id="set-filters">
+        <button class="chip active" data-set="ALL">All</button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Max Cost</h3>
+      <div class="range-row">
+        <label>Cost</label>
+        <input type="range" id="cost-filter" min="0" max="10" value="10">
+        <span class="range-val" id="cost-val">Any</span>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Min Power</h3>
+      <div class="range-row">
+        <label>PWR</label>
+        <input type="range" id="pwr-filter" min="0" max="10" value="0">
+        <span class="range-val" id="pwr-val">Any</span>
+      </div>
+    </div>
+
+    <div class="filter-group" style="margin-top:auto;">
+      <button class="btn" id="reset-btn" style="width:100%;">Reset Filters</button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+    <div class="toolbar">
+      <div style="flex:1"></div>
+      <div class="view-toggles">
+        <button class="view-btn active" id="grid-view-btn" title="Grid view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+          </svg>
+        </button>
+        <button class="view-btn" id="list-view-btn" title="List view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <a href="print.html" class="btn btn-gold">⬛ Print Cards</a>
+    </div>
+
+    <div id="card-grid">
+      <div class="loading">LOADING DATABASE…</div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div class="modal-img" id="modal-img"></div>
+    <div class="modal-content" id="modal-content"></div>
+  </div>
+</div>
+
+<script src="viewer.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "cyberpunk-tcg",
+  "version": "1.0.0",
+  "description": "Cyberpunk TCG card scraper and viewer",
+  "scripts": {
+    "scrape": "node scraper.js && node cleanup.js",
+    "serve": "node server.js"
+  },
+  "dependencies": {
+    "playwright": "^1.59.1"
+  }
+}

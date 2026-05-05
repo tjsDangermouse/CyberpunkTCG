@@ -1,0 +1,903 @@
+[
+  {
+    "slug": "v-streetkid",
+    "name": "V",
+    "subtitle": "Streetkid",
+    "type": "LEGEND",
+    "cost": 4,
+    "power": 3,
+    "ram": 2,
+    "abilities": [
+      "GO SOLO DEFEATED Discard the top 3 cards of your deck. Then, choose 1 Braindance Program from your trash and add it to your hand.",
+      "GO SOLO DEFEATED Discard the top 3 cards of your deck. Then, choose 1 Braindance Program from your trash and add it to your hand."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "132a",
+    "artist": "Pandart Studio",
+    "image": "images/v-streetkid.webp",
+    "url": "https://cyberpunktcg.com/cards/v-streetkid"
+  },
+  {
+    "slug": "royce-psycho-on-the-edge",
+    "name": "Royce",
+    "subtitle": "Psycho on the Edge",
+    "type": "LEGEND",
+    "cost": 6,
+    "power": 6,
+    "ram": 2,
+    "abilities": [
+      "GO SOLO During your turn, this Legend has +2 power for each equipped Gear.",
+      "GO SOLO During your turn, this Legend has +2 power for each equipped Gear."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "131",
+    "artist": "Pandart Studio",
+    "image": "images/royce-psycho-on-the-edge.webp",
+    "url": "https://cyberpunktcg.com/cards/royce-psycho-on-the-edge"
+  },
+  {
+    "slug": "yorinobu-arasaka-embracing-destruction",
+    "name": "Yorinobu Arasaka",
+    "subtitle": "Embracing Destruction",
+    "type": "LEGEND",
+    "cost": null,
+    "power": 0,
+    "ram": 2,
+    "abilities": [
+      "Embracing Destruction",
+      "The first time a friendly Arasaka unit attacks each turn, draw a card. Then, if you have less than 20 * (Street Cred), discard 1 card from your hand to your trash.",
+      "The first time a friendly Arasaka unit attacks each turn, draw a card. Then, if you have less than 20 * (Street Cred), discard 1 card from your hand to your trash."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α001",
+    "artist": null,
+    "image": "images/yorinobu-arasaka-embracing-destruction.webp",
+    "url": "https://cyberpunktcg.com/cards/yorinobu-arasaka-embracing-destruction"
+  },
+  {
+    "slug": "ruthless-lowlife",
+    "name": "Ruthless Lowlife",
+    "subtitle": null,
+    "type": "UNIT",
+    "cost": 2,
+    "power": 1,
+    "ram": 1,
+    "abilities": [
+      "When a rival steals one or more friendly gigs, if this unit is spent, the value of those gigs becomes 1.",
+      "When a rival steals one or more friendly gigs, if this unit is spent, the value of those gigs becomes 1."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α008",
+    "artist": "Jeffrey Alan Love",
+    "image": "images/ruthless-lowlife.webp",
+    "url": "https://cyberpunktcg.com/cards/ruthless-lowlife"
+  },
+  {
+    "slug": "swordwise-huscle",
+    "name": "Swordwise Huscle",
+    "subtitle": null,
+    "type": "UNIT",
+    "cost": 3,
+    "power": 5,
+    "ram": 1,
+    "abilities": null,
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α009",
+    "artist": "Olgierd Ciszak",
+    "image": "images/swordwise-huscle.webp",
+    "url": "https://cyberpunktcg.com/cards/swordwise-huscle"
+  },
+  {
+    "slug": "el-sombreron-la-venganza-lenta",
+    "name": "El Sombrerón",
+    "subtitle": "La Venganza Lenta",
+    "type": "UNIT",
+    "cost": 4,
+    "power": 4,
+    "ram": 4,
+    "abilities": [
+      "ATTACK While fighting a rival Unit, double this Unit's power.",
+      "ATTACK While fighting a rival Unit, double this Unit's power."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "019",
+    "artist": "Rafael de Latorre & Clonerh",
+    "image": "images/el-sombreron-la-venganza-lenta.webp",
+    "url": "https://cyberpunktcg.com/cards/el-sombreron-la-venganza-lenta"
+  },
+  {
+    "slug": "kerry-eurodyne-the-last-rockerboy",
+    "name": "Kerry Eurodyne",
+    "subtitle": "The Last Rockerboy",
+    "type": "UNIT",
+    "cost": 4,
+    "power": 3,
+    "ram": 2,
+    "abilities": [
+      "[Spend Icon]: If you have a Gig at max value, draw 2 cards.",
+      "[Spend Icon]: If you have a Gig at max value, draw 2 cards."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "067",
+    "artist": "Bogna Gawrońska",
+    "image": "images/kerry-eurodyne-the-last-rockerboy.webp",
+    "url": "https://cyberpunktcg.com/cards/kerry-eurodyne-the-last-rockerboy"
+  },
+  {
+    "slug": "meredith-stout-stone-cold-corpo",
+    "name": "Meredith Stout",
+    "subtitle": "Stone Cold Corpo",
+    "type": "UNIT",
+    "cost": 4,
+    "power": 3,
+    "ram": 2,
+    "abilities": [
+      "When a rival decreases the value of your friendly Gig, you may choose a card from your trash and add it to your hand.",
+      "When a rival decreases the value of your friendly Gig, you may choose a card from your trash and add it to your hand."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "069",
+    "artist": "Daniel Valaisis",
+    "image": "images/meredith-stout-stone-cold-corpo.webp",
+    "url": "https://cyberpunktcg.com/cards/meredith-stout-stone-cold-corpo"
+  },
+  {
+    "slug": "armored-minotaur",
+    "name": "Armored Minotaur",
+    "subtitle": null,
+    "type": "UNIT",
+    "cost": 6,
+    "power": 9,
+    "ram": 4,
+    "abilities": [
+      "PLAY If you have 12+ * (Street Cred), defeat a rival unit with power 5 or less.",
+      "PLAY If you have 12+ * (Street Cred), defeat a rival unit with power 5 or less."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α007",
+    "artist": "CD PROJEKT RED",
+    "image": "images/armored-minotaur.webp",
+    "url": "https://cyberpunktcg.com/cards/armored-minotaur"
+  },
+  {
+    "slug": "mantis-blades",
+    "name": "Mantis Blades",
+    "subtitle": null,
+    "type": "GEAR",
+    "cost": 1,
+    "power": 2,
+    "ram": 1,
+    "abilities": [
+      "(Equip to a unit or face-up legend.)",
+      "(Equip to a unit or face-up legend.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α019",
+    "artist": "Giada Marchisio, Kieran McKeown",
+    "image": "images/mantis-blades.webp",
+    "url": "https://cyberpunktcg.com/cards/mantis-blades"
+  },
+  {
+    "slug": "satori-sword-of-saburo",
+    "name": "Satori",
+    "subtitle": "Sword of Saburo",
+    "type": "GEAR",
+    "cost": 2,
+    "power": 1,
+    "ram": 2,
+    "abilities": [
+      "(Equip to a unit or face-up legend.) ATTACK If this unit wins a fight against a rival unit, draw a card.",
+      "(Equip to a unit or face-up legend.) ATTACK If this unit wins a fight against a rival unit, draw a card."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α020",
+    "artist": "Ivan Shavrin",
+    "image": "images/satori-sword-of-saburo.webp",
+    "url": "https://cyberpunktcg.com/cards/satori-sword-of-saburo"
+  },
+  {
+    "slug": "industrial-assembly",
+    "name": "Industrial Assembly",
+    "subtitle": null,
+    "type": "PROGRAM",
+    "cost": 2,
+    "power": null,
+    "ram": 1,
+    "abilities": [
+      "Increase a friendly gig by 4. Then, if you have 7+ * (Street Cred), draw a card. (Discard programs after they resolve.)",
+      "Increase a friendly gig by 4. Then, if you have 7+ * (Street Cred), draw a card. (Discard programs after they resolve.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α021",
+    "artist": "Alexander Dudar",
+    "image": "images/industrial-assembly.webp",
+    "url": "https://cyberpunktcg.com/cards/industrial-assembly"
+  },
+  {
+    "slug": "dum-dum-maelstrom-triggerman",
+    "name": "Dum Dum",
+    "subtitle": "Maelstrom Triggerman",
+    "type": "LEGEND",
+    "cost": null,
+    "power": null,
+    "ram": 2,
+    "abilities": [
+      "CALL You may defeat a friendly Gear. If you do, draw 4 cards. Otherwise, draw 1 card.",
+      "CALL You may defeat a friendly Gear. If you do, draw 4 cards. Otherwise, draw 1 card."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "133",
+    "artist": "Pandart Studio",
+    "image": "images/dum-dum-maelstrom-triggerman.webp",
+    "url": "https://cyberpunktcg.com/cards/dum-dum-maelstrom-triggerman"
+  },
+  {
+    "slug": "river-ward-detective-on-the-hunt",
+    "name": "River Ward",
+    "subtitle": "Detective on the Hunt",
+    "type": "LEGEND",
+    "cost": null,
+    "power": null,
+    "ram": 2,
+    "abilities": [
+      "Detective on the Hunt",
+      "CALL Draw a card. When a Unit attacks, [Spend Icon]: Choose a Gear from your hand with cost 2 or less. Equip it for free to a friendly Yellow Unit with no equipped Gears.",
+      "CALL Draw a card. When a Unit attacks, [Spend Icon]: Choose a Gear from your hand with cost 2 or less. Equip it for free to a friendly Yellow Unit with no equipped Gears."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "135",
+    "artist": "Pandart Studio",
+    "image": "images/river-ward-detective-on-the-hunt.webp",
+    "url": "https://cyberpunktcg.com/cards/river-ward-detective-on-the-hunt"
+  },
+  {
+    "slug": "viktor-vektor-sit-down-and-relax",
+    "name": "Viktor Vektor",
+    "subtitle": "Sit Down and Relax",
+    "type": "LEGEND",
+    "cost": null,
+    "power": 0,
+    "ram": 2,
+    "abilities": [
+      "FLIP Search the top 5 cards of your deck for up yo 2 gear that costs 2 or less each. Reveal them and add them to your hand. (Place the other cards on the bottom of your deck in a random order.)",
+      "FLIP Search the top 5 cards of your deck for up yo 2 gear that costs 2 or less each. Reveal them and add them to your hand. (Place the other cards on the bottom of your deck in a random order.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α006",
+    "artist": "Envar",
+    "image": "images/viktor-vektor-sit-down-and-relax.webp",
+    "url": "https://cyberpunktcg.com/cards/viktor-vektor-sit-down-and-relax"
+  },
+  {
+    "slug": "secondhand-bombus",
+    "name": "Secondhand Bombus",
+    "subtitle": null,
+    "type": "UNIT",
+    "cost": 2,
+    "power": 2,
+    "ram": 1,
+    "abilities": [
+      "This unit can't attack. BLOCKER (When a rival unit attacks, you may spend this unit to redirect the attack to it.)",
+      "This unit can't attack. BLOCKER (When a rival unit attacks, you may spend this unit to redirect the attack to it.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α014",
+    "artist": "Luca Claretti",
+    "image": "images/secondhand-bombus.webp",
+    "url": "https://cyberpunktcg.com/cards/secondhand-bombus"
+  },
+  {
+    "slug": "hanako-arasaka-in-a-gilded-cage",
+    "name": "Hanako Arasaka",
+    "subtitle": "In A Gilded Cage",
+    "type": "UNIT",
+    "cost": 3,
+    "power": 0,
+    "ram": 2,
+    "abilities": [
+      "PLAY Reveal the top 4 cards of your deck. Then choose a friendly Gig. Add all cards with cost equal to that Gig's value to your hand. Trash the rest.",
+      "PLAY Reveal the top 4 cards of your deck. Then choose a friendly Gig. Add all cards with cost equal to that Gig's value to your hand. Trash the rest."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "126",
+    "artist": "Akram",
+    "image": "images/hanako-arasaka-in-a-gilded-cage.webp",
+    "url": "https://cyberpunktcg.com/cards/hanako-arasaka-in-a-gilded-cage"
+  },
+  {
+    "slug": "t-bug-amateur-philosopher",
+    "name": "T-Bug",
+    "subtitle": "Amateur Philosopher",
+    "type": "UNIT",
+    "cost": 3,
+    "power": 5,
+    "ram": 1,
+    "abilities": null,
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α015",
+    "artist": "CD PROJEKT RED",
+    "image": "images/t-bug-amateur-philosopher.webp",
+    "url": "https://cyberpunktcg.com/cards/t-bug-amateur-philosopher"
+  },
+  {
+    "slug": "caliber-totentanz-s-top-dog",
+    "name": "Caliber",
+    "subtitle": "Totentanz's Top Dog",
+    "type": "UNIT",
+    "cost": 5,
+    "power": 6,
+    "ram": 4,
+    "abilities": [
+      "DEFEATED A rival discards 1. If the card's cost is equal to the value of a friendly Gig, that rival discards 1 more.",
+      "DEFEATED A rival discards 1. If the card's cost is equal to the value of a friendly Gig, that rival discards 1 more."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "036",
+    "artist": "André Lima Araújo with Chris O'Halloran",
+    "image": "images/caliber-totentanz-s-top-dog.webp",
+    "url": "https://cyberpunktcg.com/cards/caliber-totentanz-s-top-dog"
+  },
+  {
+    "slug": "jackie-welles-ride-or-die-choom",
+    "name": "Jackie Welles",
+    "subtitle": "Ride Or Die Choom",
+    "type": "UNIT",
+    "cost": 6,
+    "power": 6,
+    "ram": 3,
+    "abilities": [
+      "This unit has +2 power for each of your friendly gigs. (Units steal an extra gig for every 10 power.)",
+      "This unit has +2 power for each of your friendly gigs. (Units steal an extra gig for every 10 power.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α013",
+    "artist": "Ilya Kuvshinov",
+    "image": "images/jackie-welles-ride-or-die-choom.webp",
+    "url": "https://cyberpunktcg.com/cards/jackie-welles-ride-or-die-choom"
+  },
+  {
+    "slug": "adam-smasher-metal-over-meat",
+    "name": "Adam Smasher",
+    "subtitle": "Metal Over Meat",
+    "type": "UNIT",
+    "cost": 9,
+    "power": 15,
+    "ram": 5,
+    "abilities": [
+      "PLAY Defeat all other Units.",
+      "PLAY Defeat all other Units."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "137",
+    "artist": "Łukasz Poller",
+    "image": "images/adam-smasher-metal-over-meat.webp",
+    "url": "https://cyberpunktcg.com/cards/adam-smasher-metal-over-meat"
+  },
+  {
+    "slug": "kiroshi-optics",
+    "name": "Kiroshi Optics",
+    "subtitle": null,
+    "type": "GEAR",
+    "cost": 1,
+    "power": 1,
+    "ram": 1,
+    "abilities": [
+      "(Equip to a unit or face-up legend.) ATTACK Look at a friendly face-down legend without revealing it.",
+      "(Equip to a unit or face-up legend.) ATTACK Look at a friendly face-down legend without revealing it."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α026",
+    "artist": "CD PROJEKT RED",
+    "image": "images/kiroshi-optics.webp",
+    "url": "https://cyberpunktcg.com/cards/kiroshi-optics"
+  },
+  {
+    "slug": "mandibular-upgrade",
+    "name": "Mandibular Upgrade",
+    "subtitle": null,
+    "type": "GEAR",
+    "cost": 1,
+    "power": 0,
+    "ram": 2,
+    "abilities": [
+      "(Equip to a unit or face-up legend.) BLOCKER (When a rival unit attacks, you may spend this unit to redirect the attack to it.)",
+      "(Equip to a unit or face-up legend.) BLOCKER (When a rival unit attacks, you may spend this unit to redirect the attack to it.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α027",
+    "artist": "Lea Leonowicz",
+    "image": "images/mandibular-upgrade.webp",
+    "url": "https://cyberpunktcg.com/cards/mandibular-upgrade"
+  },
+  {
+    "slug": "gorilla-arms",
+    "name": "Gorilla Arms",
+    "subtitle": null,
+    "type": "GEAR",
+    "cost": 4,
+    "power": 4,
+    "ram": 4,
+    "abilities": [
+      "(Equip to a Unit or face-up Legend.) The first time this Unit steals a Gig each turn, you may steal a rival Gig with the same number of sides.",
+      "(Equip to a Unit or face-up Legend.) The first time this Unit steals a Gig each turn, you may steal a rival Gig with the same number of sides."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "111",
+    "artist": "TOPDOG",
+    "image": "images/gorilla-arms.webp",
+    "url": "https://cyberpunktcg.com/cards/gorilla-arms"
+  },
+  {
+    "slug": "afterparty-at-lizzie-s",
+    "name": "Afterparty at Lizzie's",
+    "subtitle": null,
+    "type": "PROGRAM",
+    "cost": 2,
+    "power": null,
+    "ram": 2,
+    "abilities": [
+      "Afterparty at Lizzie's",
+      "Adjust a rival Gig by up to ±2. Then, if a friendly Gig has the same value, draw a card.",
+      "Adjust a rival Gig by up to ±2. Then, if a friendly Gig has the same value, draw a card."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "116",
+    "artist": "Alicja Użarowska",
+    "image": "images/afterparty-at-lizzie-s.webp",
+    "url": "https://cyberpunktcg.com/cards/afterparty-at-lizzie-s"
+  },
+  {
+    "slug": "cyberpsychosis",
+    "name": "Cyberpsychosis",
+    "subtitle": null,
+    "type": "PROGRAM",
+    "cost": 2,
+    "power": null,
+    "ram": 3,
+    "abilities": [
+      "You may also play this Program when a Unit attacks by paying this card's cost and spending a friendly Unit or face-up Legend. Give an equipped Unit +2 power this turn for each of its equipped Gear. Defeat the Unit at the end of this turn.",
+      "You may also play this Program when a Unit attacks by paying this card's cost and spending a friendly Unit or face-up Legend. Give an equipped Unit +2 power this turn for each of its equipped Gear. Defeat the Unit at the end of this turn."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "102",
+    "artist": "Michal Ivan",
+    "image": "images/cyberpsychosis.webp",
+    "url": "https://cyberpunktcg.com/cards/cyberpsychosis"
+  },
+  {
+    "slug": "reboot-optics",
+    "name": "Reboot Optics",
+    "subtitle": null,
+    "type": "PROGRAM",
+    "cost": 2,
+    "power": null,
+    "ram": 2,
+    "abilities": [
+      "Give a friendly unit +4 power this turn. Defeat it at the end of the turn. (Discard programs after they resolve.)",
+      "Give a friendly unit +4 power this turn. Defeat it at the end of the turn. (Discard programs after they resolve.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α028",
+    "artist": "Miguel Valderrama",
+    "image": "images/reboot-optics.webp",
+    "url": "https://cyberpunktcg.com/cards/reboot-optics"
+  },
+  {
+    "slug": "goro-takemura-hands-unclean",
+    "name": "Goro Takemura",
+    "subtitle": "Hands Unclean",
+    "type": "LEGEND",
+    "cost": 5,
+    "power": 7,
+    "ram": 2,
+    "abilities": [
+      "GO SOLO (Pay this card's cost to play it as a ready unit. It can attack this turn.) BLOCKER (When a rival units attacks, you may spend this unit to redirect the attack to this unit.)",
+      "GO SOLO (Pay this card's cost to play it as a ready unit. It can attack this turn.) BLOCKER (When a rival units attacks, you may spend this unit to redirect the attack to this unit.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α004",
+    "artist": "Bad Moon Studio",
+    "image": "images/goro-takemura-hands-unclean.webp",
+    "url": "https://cyberpunktcg.com/cards/goro-takemura-hands-unclean"
+  },
+  {
+    "slug": "goro-takemura-vengeful-bodyguard",
+    "name": "Goro Takemura",
+    "subtitle": "Vengeful Bodyguard",
+    "type": "LEGEND",
+    "cost": null,
+    "power": null,
+    "ram": 2,
+    "abilities": [
+      "CALL Ready this Legend. When a rival Unit attacks, [Spend Icon]: If you have a sided-pair of Gigs, give a friendly Unit with cost 4 or less +1 power and BLOCKER this turn.",
+      "CALL Ready this Legend. When a rival Unit attacks, [Spend Icon]: If you have a sided-pair of Gigs, give a friendly Unit with cost 4 or less +1 power and BLOCKER this turn."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "125",
+    "artist": "Pandart Studio",
+    "image": "images/goro-takemura-vengeful-bodyguard.webp",
+    "url": "https://cyberpunktcg.com/cards/goro-takemura-vengeful-bodyguard"
+  },
+  {
+    "slug": "panam-palmer-nomad-cavalry",
+    "name": "Panam Palmer",
+    "subtitle": "Nomad Cavalry",
+    "type": "LEGEND",
+    "cost": null,
+    "power": null,
+    "ram": 2,
+    "abilities": [
+      "CALL Ready this Legend. When a friendly Unit attacks, [Spend Icon]: Choose a Gear from this Legend and equip it to that Unit. If you do, ready that Unit.",
+      "CALL Ready this Legend. When a friendly Unit attacks, [Spend Icon]: Choose a Gear from this Legend and equip it to that Unit. If you do, ready that Unit."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "032",
+    "artist": "Łukasz Poller",
+    "image": "images/panam-palmer-nomad-cavalry.webp",
+    "url": "https://cyberpunktcg.com/cards/panam-palmer-nomad-cavalry"
+  },
+  {
+    "slug": "saburo-arasaka-stubborn-patriach",
+    "name": "Saburo Arasaka",
+    "subtitle": "Stubborn Patriach",
+    "type": "LEGEND",
+    "cost": null,
+    "power": 0,
+    "ram": 2,
+    "abilities": [
+      "Your Arasaka units have +1 power when attacking. (Units steal an extra gig for every 10 power.)",
+      "Your Arasaka units have +1 power when attacking. (Units steal an extra gig for every 10 power.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α005",
+    "artist": null,
+    "image": "images/saburo-arasaka-stubborn-patriach.webp",
+    "url": "https://cyberpunktcg.com/cards/saburo-arasaka-stubborn-patriach"
+  },
+  {
+    "slug": "corpo-security",
+    "name": "Corpo Security",
+    "subtitle": null,
+    "type": "UNIT",
+    "cost": 2,
+    "power": 2,
+    "ram": 2,
+    "abilities": [
+      "This unit can't attack. BLOCKER (When a rival unit attacks, you may spend this unit to redirect the attack to it.)",
+      "This unit can't attack. BLOCKER (When a rival unit attacks, you may spend this unit to redirect the attack to it.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α016",
+    "artist": "Daniel Valaisis",
+    "image": "images/corpo-security.webp",
+    "url": "https://cyberpunktcg.com/cards/corpo-security"
+  },
+  {
+    "slug": "emergency-atlus",
+    "name": "Emergency Atlus",
+    "subtitle": null,
+    "type": "UNIT",
+    "cost": 4,
+    "power": 7,
+    "ram": 3,
+    "abilities": null,
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α017",
+    "artist": "Robert Sammelin",
+    "image": "images/emergency-atlus.webp",
+    "url": "https://cyberpunktcg.com/cards/emergency-atlus"
+  },
+  {
+    "slug": "goro-takemura-losing-his-way",
+    "name": "Goro Takemura",
+    "subtitle": "Losing His Way",
+    "type": "UNIT",
+    "cost": 4,
+    "power": 5,
+    "ram": 3,
+    "abilities": [
+      "This unit has +1 power during your turn for each face-up legend in your legends area.",
+      "This unit has +1 power during your turn for each face-up legend in your legends area."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α018",
+    "artist": "Ilya Kuvshinov",
+    "image": "images/goro-takemura-losing-his-way.webp",
+    "url": "https://cyberpunktcg.com/cards/goro-takemura-losing-his-way"
+  },
+  {
+    "slug": "riding-nomad",
+    "name": "Riding Nomad",
+    "subtitle": null,
+    "type": "UNIT",
+    "cost": 6,
+    "power": 6,
+    "ram": 3,
+    "abilities": [
+      "This Unit can attack spent rival Units the turn it's played.",
+      "This Unit can attack spent rival Units the turn it's played."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "042",
+    "artist": "Michal Ivan",
+    "image": "images/riding-nomad.webp",
+    "url": "https://cyberpunktcg.com/cards/riding-nomad"
+  },
+  {
+    "slug": "sandevistan",
+    "name": "Sandevistan",
+    "subtitle": null,
+    "type": "GEAR",
+    "cost": 3,
+    "power": 3,
+    "ram": 4,
+    "abilities": [
+      "(Equip to a unit or face-up legend.) PLAY This unit can attack spent units this turn.",
+      "(Equip to a unit or face-up legend.) PLAY This unit can attack spent units this turn."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α024",
+    "artist": "CD PROJEKT RED",
+    "image": "images/sandevistan.webp",
+    "url": "https://cyberpunktcg.com/cards/sandevistan"
+  },
+  {
+    "slug": "corporate-surveillance",
+    "name": "Corporate Surveillance",
+    "subtitle": null,
+    "type": "PROGRAM",
+    "cost": 2,
+    "power": null,
+    "ram": 2,
+    "abilities": [
+      "Corporate Surveillance",
+      "Spend a rival unit with cost 3 or less. (Discard programs after they resolve.)",
+      "Spend a rival unit with cost 3 or less. (Discard programs after they resolve.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α025",
+    "artist": "John Liew",
+    "image": "images/corporate-surveillance.webp",
+    "url": "https://cyberpunktcg.com/cards/corporate-surveillance"
+  },
+  {
+    "slug": "v-corporate-exile",
+    "name": "V",
+    "subtitle": "Corporate Exile",
+    "type": "LEGEND",
+    "cost": 5,
+    "power": 8,
+    "ram": 2,
+    "abilities": [
+      "GO SOLO (Pay this card's cost to play it as a ready unit. It can attack this turn.)",
+      "GO SOLO (Pay this card's cost to play it as a ready unit. It can attack this turn.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α003",
+    "artist": "Envar",
+    "image": "images/v-corporate-exile.webp",
+    "url": "https://cyberpunktcg.com/cards/v-corporate-exile"
+  },
+  {
+    "slug": "alt-cunningham-soulkiller-architect",
+    "name": "Alt Cunningham",
+    "subtitle": "Soulkiller Architect",
+    "type": "LEGEND",
+    "cost": 6,
+    "power": 4,
+    "ram": 2,
+    "abilities": [
+      "GO SOLO When this Legend steals a Gig, you may remove this Legend from the game. If you do, choose a Program from your trash. Play it for free.",
+      "GO SOLO When this Legend steals a Gig, you may remove this Legend from the game. If you do, choose a Program from your trash. Play it for free."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "121",
+    "artist": "Pandart Studio",
+    "image": "images/alt-cunningham-soulkiller-architect.webp",
+    "url": "https://cyberpunktcg.com/cards/alt-cunningham-soulkiller-architect"
+  },
+  {
+    "slug": "evelyn-parker-beautiful-enigma",
+    "name": "Evelyn Parker",
+    "subtitle": "Beautiful Enigma",
+    "type": "LEGEND",
+    "cost": null,
+    "power": null,
+    "ram": 2,
+    "abilities": [
+      "CALL Decrease a rival Gig's value by 3. [Spend Icon]: Search the top 3 cards of your deck for up to 1 Braindance Program. Add it to your hand. Bottom-deck the rest.",
+      "CALL Decrease a rival Gig's value by 3. [Spend Icon]: Search the top 3 cards of your deck for up to 1 Braindance Program. Add it to your hand. Bottom-deck the rest."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "122",
+    "artist": "Pandart Studio",
+    "image": "images/evelyn-parker-beautiful-enigma.webp",
+    "url": "https://cyberpunktcg.com/cards/evelyn-parker-beautiful-enigma"
+  },
+  {
+    "slug": "jackie-welles-pour-one-out-for-me",
+    "name": "Jackie Welles",
+    "subtitle": "Pour One Out For Me",
+    "type": "LEGEND",
+    "cost": null,
+    "power": 0,
+    "ram": 2,
+    "abilities": [
+      "The first time you play a blue unit or blue gear each turn, you may increase a friendly gig by 2. Then, if it's at max value, draw a card.",
+      "The first time you play a blue unit or blue gear each turn, you may increase a friendly gig by 2. Then, if it's at max value, draw a card."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α002",
+    "artist": "Envar",
+    "image": "images/jackie-welles-pour-one-out-for-me.webp",
+    "url": "https://cyberpunktcg.com/cards/jackie-welles-pour-one-out-for-me"
+  },
+  {
+    "slug": "lucyna-kushinada",
+    "name": "Lucyna Kushinada",
+    "subtitle": null,
+    "type": "LEGEND",
+    "cost": null,
+    "power": 0,
+    "ram": 2,
+    "abilities": null,
+    "keywords": null,
+    "set": "Promo Cards",
+    "cardNumber": "N001",
+    "artist": "Pandart Studio",
+    "image": "images/lucyna-kushinada.webp",
+    "url": "https://cyberpunktcg.com/cards/lucyna-kushinada"
+  },
+  {
+    "slug": "evelyn-parker-scheming-siren",
+    "name": "Evelyn Parker",
+    "subtitle": "Scheming Siren",
+    "type": "UNIT",
+    "cost": 2,
+    "power": 1,
+    "ram": 1,
+    "abilities": [
+      "When a rival steals one or more friendly gigs, if this unit is spent, draw a card.",
+      "When a rival steals one or more friendly gigs, if this unit is spent, draw a card."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α011",
+    "artist": "Olgierd Ciszak",
+    "image": "images/evelyn-parker-scheming-siren.webp",
+    "url": "https://cyberpunktcg.com/cards/evelyn-parker-scheming-siren"
+  },
+  {
+    "slug": "delamain-cab",
+    "name": "Delamain Cab",
+    "subtitle": null,
+    "type": "UNIT",
+    "cost": 4,
+    "power": 7,
+    "ram": 3,
+    "abilities": null,
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α010",
+    "artist": "Daniel Valaisis",
+    "image": "images/delamain-cab.webp",
+    "url": "https://cyberpunktcg.com/cards/delamain-cab"
+  },
+  {
+    "slug": "mt0d12-flathead",
+    "name": "MT0D12 Flathead",
+    "subtitle": null,
+    "type": "UNIT",
+    "cost": 5,
+    "power": 5,
+    "ram": 3,
+    "abilities": [
+      "If you have 7+ * (Street Cred), this unit can't be blocked.",
+      "If you have 7+ * (Street Cred), this unit can't be blocked."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α012",
+    "artist": "Frederico Sabbatini",
+    "image": "images/mt0d12-flathead.webp",
+    "url": "https://cyberpunktcg.com/cards/mt0d12-flathead"
+  },
+  {
+    "slug": "placide-voodoo-sentinel",
+    "name": "Placide",
+    "subtitle": "Voodoo Sentinel",
+    "type": "UNIT",
+    "cost": 8,
+    "power": 10,
+    "ram": 2,
+    "abilities": [
+      "PLAY ATTACK You may discard a Program from your hand. If you do, bottom-deck a rival Unit.",
+      "PLAY ATTACK You may discard a Program from your hand. If you do, bottom-deck a rival Unit."
+    ],
+    "keywords": null,
+    "set": "Spoiler Set",
+    "cardNumber": "073",
+    "artist": "Mooncolony",
+    "image": "images/placide-voodoo-sentinel.webp",
+    "url": "https://cyberpunktcg.com/cards/placide-voodoo-sentinel"
+  },
+  {
+    "slug": "dying-night-v-s-pistol",
+    "name": "Dying Night",
+    "subtitle": "V's Pistol",
+    "type": "GEAR",
+    "cost": 2,
+    "power": 2,
+    "ram": 3,
+    "abilities": [
+      "(Equip to a unit or face-up legend.) ATTACK If you have 7+ * (Street Cred), defeat a rival gear card that costs 2 or less.",
+      "(Equip to a unit or face-up legend.) ATTACK If you have 7+ * (Street Cred), defeat a rival gear card that costs 2 or less."
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α022",
+    "artist": "Ivan Shavrin",
+    "image": "images/dying-night-v-s-pistol.webp",
+    "url": "https://cyberpunktcg.com/cards/dying-night-v-s-pistol"
+  },
+  {
+    "slug": "floor-it",
+    "name": "Floor It",
+    "subtitle": null,
+    "type": "PROGRAM",
+    "cost": 3,
+    "power": null,
+    "ram": 2,
+    "abilities": [
+      "Return a spent unit with cost 4 or less to its owner's hand. (Discard programs after they resolve.)",
+      "Return a spent unit with cost 4 or less to its owner's hand. (Discard programs after they resolve.)"
+    ],
+    "keywords": null,
+    "set": "Alpha Kit Set",
+    "cardNumber": "α023",
+    "artist": "DOFRESH",
+    "image": "images/floor-it.webp",
+    "url": "https://cyberpunktcg.com/cards/floor-it"
+  }
+]
