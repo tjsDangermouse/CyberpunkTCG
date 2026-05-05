@@ -15,7 +15,8 @@ const PAGE_DIMS = {
 };
 
 let allCards = [];
-let selectedSlugs = new Set();
+let selectedCounts = new Map();
+let decks = [];
 let cardSearch = '';
 
 const paperSizeEl  = document.getElementById('paper-size');
@@ -27,6 +28,59 @@ const selectGrid   = document.getElementById('select-grid');
 const selCount     = document.getElementById('sel-count');
 const pageCountEl  = document.getElementById('page-count');
 const cardSearchEl = document.getElementById('card-search');
+const deckSelectEl = document.getElementById('deck-select');
+const loadDeckBtn  = document.getElementById('load-deck-btn');
+
+function getTotalSelectedCopies() {
+  let total = 0;
+  selectedCounts.forEach(qty => { total += qty; });
+  return total;
+}
+
+function buildSelectedCardsWithQuantities() {
+  const selected = [];
+  allCards.forEach(card => {
+    const qty = Math.max(0, Number(selectedCounts.get(card.slug) || 0));
+    for (let i = 0; i < qty; i++) selected.push(card);
+  });
+  return selected;
+}
+
+function loadDeckOptions() {
+  const saved = localStorage.getItem('cyberpunk-decks');
+  if (!saved) return;
+  try {
+    decks = JSON.parse(saved) || [];
+  } catch {
+    decks = [];
+  }
+
+  if (!Array.isArray(decks)) decks = [];
+
+  const options = decks.map(deck => {
+    const count = Object.values(deck.cards || {}).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
+    return `<option value="${deck.id}">${deck.name} (${count} cards)</option>`;
+  }).join('');
+
+  deckSelectEl.innerHTML = `<option value="">Manual selection</option>${options}`;
+
+  const currentDeckId = localStorage.getItem('cyberpunk-current-deck');
+  if (currentDeckId && decks.some(d => d.id === currentDeckId)) {
+    deckSelectEl.value = currentDeckId;
+  }
+}
+
+function applyDeckSelection(deckId) {
+  const deck = decks.find(d => d.id === deckId);
+  if (!deck) return;
+
+  selectedCounts.clear();
+  Object.entries(deck.cards || {}).forEach(([slug, qty]) => {
+    const count = Math.max(0, Number(qty) || 0);
+    if (count > 0) selectedCounts.set(slug, count);
+  });
+  renderSelector();
+}
 
 // ── Card selector ─────────────────────────────────────────────
 function renderSelector() {
@@ -37,7 +91,8 @@ function renderSelector() {
   );
 
   selectGrid.innerHTML = visible.map(card => {
-    const checked = selectedSlugs.has(card.slug);
+    const qty = selectedCounts.get(card.slug) || 0;
+    const checked = qty > 0;
     const imgSrc = card.image || null;
     return `
       <label class="select-item${checked ? ' selected' : ''}" data-slug="${card.slug}">
@@ -48,10 +103,11 @@ function renderSelector() {
         }
         <span class="select-item-name">${card.name || card.slug}</span>
         <span class="select-item-type">${card.type || ''}</span>
+        ${qty > 1 ? `<span class="select-item-type">x${qty}</span>` : ''}
       </label>`;
   }).join('');
 
-  selCount.textContent = selectedSlugs.size;
+  selCount.textContent = getTotalSelectedCopies();
   renderPages();
 }
 
@@ -59,21 +115,29 @@ selectGrid.addEventListener('change', e => {
   const cb = e.target;
   if (cb.type !== 'checkbox') return;
   const slug = cb.dataset.slug;
-  if (cb.checked) selectedSlugs.add(slug);
-  else selectedSlugs.delete(slug);
+  if (cb.checked) selectedCounts.set(slug, Math.max(1, Number(selectedCounts.get(slug) || 1)));
+  else selectedCounts.delete(slug);
   cb.closest('.select-item').classList.toggle('selected', cb.checked);
-  selCount.textContent = selectedSlugs.size;
+  selCount.textContent = getTotalSelectedCopies();
   renderPages();
 });
 
 document.getElementById('select-all-btn').addEventListener('click', () => {
-  allCards.forEach(c => selectedSlugs.add(c.slug));
+  allCards.forEach(c => selectedCounts.set(c.slug, 1));
   renderSelector();
 });
 
 document.getElementById('select-none-btn').addEventListener('click', () => {
-  selectedSlugs.clear();
+  selectedCounts.clear();
   renderSelector();
+});
+
+loadDeckBtn.addEventListener('click', () => {
+  if (!deckSelectEl.value) {
+    alert('Choose a deck first.');
+    return;
+  }
+  applyDeckSelection(deckSelectEl.value);
 });
 
 cardSearchEl.addEventListener('input', () => {
@@ -118,7 +182,7 @@ function renderPages() {
   const showMarks = showMarksEl.value === '1';
   const sizeClass = `size-${paper}`;
 
-  const selected = allCards.filter(c => selectedSlugs.has(c.slug));
+  const selected = buildSelectedCardsWithQuantities();
 
   if (selected.length === 0) {
     pagesRoot.innerHTML = `<div class="empty-state" style="color:var(--text-dim)"><div style="font-size:3rem">⬛</div><p>Select cards above to preview</p></div>`;
@@ -168,7 +232,7 @@ printBtn.addEventListener('click', () => {
   const cardsPerPage = layout.cols * layout.rows;
   const sizeClass = `size-${paper}`;
   const showMarks = showMarksEl.value === '1';
-  const selected = allCards.filter(c => selectedSlugs.has(c.slug));
+  const selected = buildSelectedCardsWithQuantities();
 
   if (selected.length === 0) {
     alert('No cards selected.');
@@ -231,7 +295,8 @@ fetch('cards.json')
   .then(data => {
     allCards = data;
     // Pre-select all cards
-    data.forEach(c => selectedSlugs.add(c.slug));
+    data.forEach(c => selectedCounts.set(c.slug, 1));
+    loadDeckOptions();
     renderSelector();
   })
   .catch(err => {

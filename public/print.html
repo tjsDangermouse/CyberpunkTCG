@@ -47,7 +47,7 @@
 
     .select-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 0.4rem;
       max-height: 260px;
       overflow-y: auto;
@@ -71,8 +71,8 @@
     .select-item input[type=checkbox] { accent-color: var(--accent); }
 
     .select-item-img {
-      width: 28px;
-      height: 39px;
+      width: 56px;
+      height: 78px;
       object-fit: cover;
       border-radius: 1px;
       background: var(--surface);
@@ -352,6 +352,7 @@
   <nav>
     <ul class="nav-links">
       <li><a href="index.html">Cards</a></li>
+      <li><a href="deck.html">Deck</a></li>
       <li><a href="print.html" class="active">Print</a></li>
     </ul>
   </nav>
@@ -359,6 +360,13 @@
 
 <!-- Toolbar -->
 <div class="print-toolbar no-print">
+  <div>
+    <label>Deck</label>
+    <select class="select" id="deck-select" style="min-width:220px">
+      <option value="">Manual selection</option>
+    </select>
+    <button class="btn" id="load-deck-btn">Load Deck</button>
+  </div>
   <div>
     <label>Paper Size</label>
     <select class="select" id="paper-size">
