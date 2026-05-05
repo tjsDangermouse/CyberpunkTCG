@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyberpunk TCG — Decks</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Layout ─────────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      position: sticky;
+      top: 56px;
+      height: calc(100vh - 56px);
+      overflow-y: auto;
+    }
+
+    .sidebar h3 {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    .deck-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .deck-item {
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .deck-item:hover {
+      border-color: var(--accent);
+    }
+
+    .deck-item.active {
+      border-color: var(--accent);
+      background: rgba(0, 229, 255, 0.05);
+    }
+
+    .deck-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .deck-meta {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .create-deck-btn {
+      width: 100%;
+      margin-top: auto;
+    }
+
+    /* ── Main ────────────────────────────────────────────── */
+    .main { padding: 1.5rem; }
+
+    .deck-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .deck-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .deck-stats {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-dim);
+    }
+
+    .deck-stats span {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .deck-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* ── Card Grid ───────────────────────────────────────── */
+    #deck-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+
+    /* ── Card ────────────────────────────────────────────── */
+    .deck-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .deck-card-img-wrap {
+      aspect-ratio: 63 / 88;
+      overflow: hidden;
+      background: var(--surface2);
+      position: relative;
+    }
+
+    .deck-card-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .deck-card-body { padding: 0.6rem; }
+
+    .deck-card-name {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: 0.2rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .deck-card-quantity {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: var(--accent);
+      color: var(--bg);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: var(--font-display);
+    }
+
+    .deck-card-controls {
+      display: flex;
+      gap: 0.25rem;
+      margin-top: 0.5rem;
+    }
+
+    .quantity-btn {
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-radius: 2px;
+      font-size: 0.75rem;
+    }
+
+    .quantity-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .remove-btn {
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--accent2);
+      background: transparent;
+      color: var(--accent2);
+      cursor: pointer;
+      border-radius: 2px;
+      font-size: 0.75rem;
+    }
+
+    .remove-btn:hover {
+      background: var(--accent2);
+      color: var(--bg);
+    }
+
+    /* ── No deck ─────────────────────────────────────────── */
+    .no-deck {
+      text-align: center;
+      padding: 4rem;
+      color: var(--text-dim);
+    }
+
+    .no-deck p { margin-top: 0.5rem; }
+
+    /* ── Modal ───────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      max-width: 500px;
+      width: 100%;
+      padding: 2rem;
+      transform: translateY(20px);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal h3 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+
+    .modal .input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .modal .input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .modal-actions .btn {
+      padding: 0.5rem 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-logo">Cyber<span>punk</span> TCG</div>
+  <nav>
+    <ul class="nav-links">
+      <li><a href="index.html">Cards</a></li>
+      <li><a href="deck.html" class="active">Decks</a></li>
+      <li><a href="print.html">Print</a></li>
+    </ul>
+  </nav>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h3>Your Decks</h3>
+    <div class="deck-list" id="deck-list">
+      <!-- Decks will be populated here -->
+    </div>
+    <button class="btn create-deck-btn" id="create-deck-btn">+ Create New Deck</button>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+    <div class="deck-header" id="deck-header" style="display: none;">
+      <div class="deck-title" id="deck-title">Select a deck</div>
+      <div class="deck-stats">
+        <span id="deck-card-count">0 cards</span>
+      </div>
+      <div class="deck-actions">
+        <button class="btn" id="edit-deck-btn">Edit Deck</button>
+        <button class="btn btn-secondary" id="delete-deck-btn">Delete</button>
+      </div>
+    </div>
+
+    <div id="deck-content">
+      <div class="no-deck">
+        <div style="font-size:3rem">🃏</div>
+        <p>Select a deck from the sidebar or create a new one.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Create Deck Modal -->
+<div class="modal-overlay" id="create-deck-modal">
+  <div class="modal">
+    <h3>Create New Deck</h3>
+    <input type="text" class="input" id="deck-name-input" placeholder="Deck name" maxlength="50">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancel-create-btn">Cancel</button>
+      <button class="btn" id="confirm-create-btn">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Deck Modal -->
+<div class="modal-overlay" id="edit-deck-modal">
+  <div class="modal">
+    <h3>Edit Deck Name</h3>
+    <input type="text" class="input" id="edit-deck-name-input" placeholder="Deck name" maxlength="50">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancel-edit-btn">Cancel</button>
+      <button class="btn" id="confirm-edit-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="deck.js"></script>
+</body>
+</html>

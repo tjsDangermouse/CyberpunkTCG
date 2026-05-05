@@ -24,6 +24,8 @@ A small Cyberpunk-themed trading card game utility that scrapes card data, clean
 
 ```bash
 npm install
+
+npx playwright install 
 ```
 
 ## Usage

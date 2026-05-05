@@ -139,6 +139,9 @@ function openModal(slug) {
       ${card.set ? `Set: ${card.set}` : ''}
       ${card.cardNumber ? ` · ${card.cardNumber}` : ''}
       ${card.url ? `<br><a href="${card.url}" target="_blank" rel="noopener">View on cyberpunktcg.com ↗</a>` : ''}
+    </div>
+    <div style="margin-top:1rem;">
+      <button class="btn" onclick="addToDeck('${card.slug}')">Add to Deck</button>
     </div>`;
 
   overlay.classList.add('open');
@@ -148,6 +151,22 @@ function openModal(slug) {
 function closeModal() {
   overlay.classList.remove('open');
   document.body.style.overflow = '';
+}
+
+function addToDeck(cardSlug) {
+  const decks = JSON.parse(localStorage.getItem('cyberpunk-decks') || '[]');
+  const currentDeckId = localStorage.getItem('cyberpunk-current-deck');
+
+  if (!currentDeckId || !decks.find(d => d.id === currentDeckId)) {
+    alert('No deck selected. Please go to the Decks page and select or create a deck first.');
+    return;
+  }
+
+  const deck = decks.find(d => d.id === currentDeckId);
+  deck.cards[cardSlug] = (deck.cards[cardSlug] || 0) + 1;
+  localStorage.setItem('cyberpunk-decks', JSON.stringify(decks));
+
+  alert(`Added ${allCards.find(c => c.slug === cardSlug)?.name || cardSlug} to ${deck.name}`);
 }
 
 function typeClass(type) {
