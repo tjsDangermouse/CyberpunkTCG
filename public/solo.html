@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyberpunk TCG — Solo Mode</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="solo.css">
+</head>
+<body class="solo-page">
+  <main class="solo-shell">
+    <div class="table-noise" aria-hidden="true"></div>
+    <div class="table-vignette" aria-hidden="true"></div>
+
+    <aside class="corner-stack">
+      <aside class="corner-hud corner-hud-left">
+        <div class="hud-cluster">
+          <p class="zone-label">Run Status</p>
+          <div id="status-grid" class="status-grid"></div>
+        </div>
+        <div class="hud-cluster">
+          <p class="zone-label">Objectives</p>
+          <div class="metric-line">
+            <span>Secured</span>
+            <strong id="objective-progress">0 / 3</strong>
+          </div>
+          <p id="run-summary" class="run-summary">Use your saved deck or the fallback runner stack.</p>
+        </div>
+      </aside>
+
+      <aside class="corner-hud corner-hud-secondary">
+        <div class="hud-cluster">
+          <div class="metric-line">
+            <span>Alert</span>
+            <strong id="alert-display">0 / 10</strong>
+          </div>
+          <div class="metric-line">
+            <span>Phase</span>
+            <strong id="phase-display">Setup</strong>
+          </div>
+        </div>
+        <div class="hud-cluster phase-hud">
+          <span id="phase-chip-setup" class="phase-chip active">Setup</span>
+          <span id="phase-chip-player-main" class="phase-chip">Main</span>
+          <span id="phase-chip-player-attack" class="phase-chip">Attack</span>
+          <span id="phase-chip-boss-turn" class="phase-chip">Boss</span>
+          <span id="phase-chip-game-over" class="phase-chip">Over</span>
+        </div>
+        <div class="hud-cluster hud-actions">
+          <button id="log-toggle-btn" class="btn hud-btn" type="button">Log</button>
+          <button id="reset-btn" class="btn btn-red hud-btn" type="button">Reset</button>
+        </div>
+      </aside>
+
+      <aside id="card-preview-overlay" class="card-preview-overlay is-hidden">
+        <div class="preview-head">
+          <p class="zone-label">Preview</p>
+          <h2 id="preview-title">Hover a card</h2>
+        </div>
+        <div id="card-preview" class="card-preview"></div>
+      </aside>
+
+      <aside id="turn-log-drawer" class="turn-log-drawer">
+        <div class="drawer-head">
+          <div>
+            <p class="zone-label">Run Log</p>
+            <h2>Combat Feed</h2>
+          </div>
+          <button id="log-close-btn" class="btn hud-btn" type="button">Close</button>
+        </div>
+        <div id="turn-log" class="turn-log"></div>
+      </aside>
+    </aside>
+
+    <section class="solo-board" aria-label="Solo game board">
+      <section class="board-zone boss-zone">
+        <div class="zone-head">
+          <div>
+            <p class="zone-label">Boss Zone</p>
+            <h2>Security Grid</h2>
+          </div>
+          <p id="boss-meta" class="zone-meta">0 defenders online</p>
+        </div>
+        <div class="boss-zone-layout">
+          <div id="boss-core" class="boss-core"></div>
+          <div class="card-rail zone-rail">
+            <div id="boss-board" class="zone-card-row"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="board-zone objective-belt">
+        <div class="zone-head compact">
+          <div>
+            <p class="zone-label">Contested District</p>
+            <h2>Objective Strip</h2>
+          </div>
+          <p id="objective-meta" class="zone-meta">3 gigs remaining</p>
+        </div>
+        <div id="objective-zone" class="objective-zone"></div>
+      </section>
+
+      <section class="board-zone player-zone">
+        <div class="zone-head compact">
+          <div>
+            <p class="zone-label">Runner Field</p>
+            <h2>Battlefield</h2>
+          </div>
+          <p id="player-meta" class="zone-meta">0 units in play</p>
+        </div>
+        <div class="card-rail zone-rail player-rail">
+          <div id="player-board" class="zone-card-row"></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="hand-stage">
+      <section class="hand-tray">
+        <div class="zone-head compact">
+          <div>
+            <p class="zone-label">Runner Grip</p>
+            <h2>Hand</h2>
+          </div>
+          <p id="hand-meta" class="zone-meta">0 cards in hand</p>
+        </div>
+        <div class="action-bar">
+          <button id="start-btn" class="btn btn-gold" type="button">Start Run</button>
+          <button id="end-phase-btn" class="btn" type="button">End Main</button>
+          <button id="attack-btn" class="btn" type="button">Attack</button>
+          <button id="confirm-target-btn" class="btn btn-gold" type="button">Confirm Target</button>
+          <button id="end-turn-btn" class="btn" type="button">End Turn</button>
+        </div>
+        <div id="player-hand" class="hand-row"></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="solo.js"></script>
+</body>
+</html>
