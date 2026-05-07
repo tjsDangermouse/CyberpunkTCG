@@ -72,7 +72,17 @@
       </aside>
     </aside>
 
-    <section class="solo-board" aria-label="Solo game board">
+    <section id="solo-board" class="solo-board" aria-label="Solo game board">
+      <div id="board-interaction-overlay" class="board-interaction-overlay" aria-hidden="true">
+        <svg id="interaction-lines" class="interaction-lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <marker id="attack-arrow-head" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse">
+              <path d="M0,0 L7,3.5 L0,7 z"></path>
+            </marker>
+          </defs>
+          <line id="attack-line" x1="0" y1="0" x2="0" y2="0"></line>
+        </svg>
+      </div>
       <section class="board-zone boss-zone">
         <div class="boss-zone-layout">
           <div id="boss-core" class="boss-core"></div>
@@ -86,7 +96,7 @@
         <div id="objective-zone" class="objective-zone"></div>
       </section>
 
-      <section class="board-zone player-zone">
+      <section id="player-zone" class="board-zone player-zone">
         <div class="card-rail zone-rail player-rail">
           <div id="player-board" class="zone-card-row"></div>
         </div>
@@ -97,6 +107,7 @@
       <section class="hand-tray">
         <div class="action-bar">
           <button id="start-btn" class="btn btn-gold" type="button">Start Run</button>
+          <button id="play-btn" class="btn btn-gold" type="button">Play</button>
           <button id="end-phase-btn" class="btn" type="button">End Main</button>
           <button id="attack-btn" class="btn" type="button">Attack</button>
           <button id="confirm-target-btn" class="btn btn-gold" type="button">Confirm Target</button>
@@ -109,7 +120,19 @@
   <div id="preview-zoom" class="preview-zoom" aria-hidden="true">
     <img id="preview-zoom-image" alt="">
   </div>
+  <div id="game-over-overlay" class="game-over-overlay is-hidden" aria-hidden="true">
+    <div class="game-over-card">
+      <p class="zone-label">Encounter Result</p>
+      <h2 id="game-over-title">Run Complete</h2>
+      <p id="game-over-text" class="run-summary"></p>
+      <button id="restart-run-btn" class="btn btn-gold" type="button">Restart Run</button>
+    </div>
+  </div>
 
+  <script src="soloGameTypes.js"></script>
+  <script src="soloBosses.js"></script>
+  <script src="soloCardUtils.js"></script>
+  <script src="soloGameReducer.js"></script>
   <script src="solo.js"></script>
 </body>
 </html>

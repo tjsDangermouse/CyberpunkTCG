@@ -73,6 +73,39 @@ body.solo-page {
   padding: 0.2rem 0 0;
 }
 
+.board-interaction-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.interaction-lines {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.interaction-lines marker path {
+  fill: rgba(255, 206, 94, 0.88);
+}
+
+#attack-line {
+  stroke: rgba(255, 206, 94, 0.9);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+  stroke-dasharray: 2.6 1.3;
+  marker-end: url(#attack-arrow-head);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  filter: drop-shadow(0 0 6px rgba(255, 206, 94, 0.45));
+  animation: linePulse 700ms linear infinite;
+}
+
+.interaction-lines.active #attack-line {
+  opacity: 1;
+}
+
 .board-zone {
   position: relative;
   min-height: 0;
@@ -175,6 +208,14 @@ body.solo-page {
 .zone-rail {
   height: 100%;
   padding: 0.7rem 0.8rem 0.82rem;
+}
+
+.zone-rail.legal-drop-zone {
+  border-color: rgba(70, 255, 159, 0.56);
+  box-shadow:
+    0 0 0 1px rgba(70, 255, 159, 0.28),
+    0 0 36px rgba(70, 255, 159, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .boss-core {
@@ -289,6 +330,10 @@ body.solo-page {
   box-shadow: 0 0 18px rgba(255, 106, 89, 0.4);
 }
 
+.alert-fill.alert-pulse {
+  animation: alertPulse 320ms ease;
+}
+
 .alert-thresholds {
   display: flex;
   flex-wrap: wrap;
@@ -323,6 +368,25 @@ body.solo-page {
 .objective-card.player {
   border-color: rgba(70, 255, 159, 0.45);
   box-shadow: 0 0 24px rgba(70, 255, 159, 0.14);
+}
+
+.objective-card.targetable {
+  border-color: rgba(247, 201, 72, 0.72);
+  box-shadow:
+    0 0 0 1px rgba(247, 201, 72, 0.44),
+    0 0 24px rgba(247, 201, 72, 0.14);
+}
+
+.objective-card.selected {
+  border-color: rgba(247, 201, 72, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(247, 201, 72, 0.72),
+    0 0 30px rgba(247, 201, 72, 0.22),
+    0 16px 40px rgba(0, 0, 0, 0.38);
+}
+
+.objective-card.gig-pulse {
+  animation: gigPulse 320ms ease;
 }
 
 .objective-card.locked {
@@ -400,11 +464,13 @@ body.solo-page {
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transform-origin: center bottom;
   transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    filter 180ms ease;
+    transform 130ms cubic-bezier(0.2, 0.8, 0.22, 1),
+    border-color 130ms ease,
+    box-shadow 130ms ease,
+    filter 130ms ease,
+    opacity 120ms ease;
   cursor: pointer;
+  will-change: transform;
 }
 
 #player-hand .solo-card {
@@ -422,7 +488,7 @@ body.solo-page {
 }
 
 .solo-card:hover {
-  transform: translateY(-12px) scale(1.045);
+  transform: translateY(-10px) scale(1.04);
   border-color: var(--solo-border-strong);
   box-shadow:
     0 0 0 1px rgba(125, 236, 255, 0.28),
@@ -433,9 +499,29 @@ body.solo-page {
 
 #player-hand .solo-card:hover {
   transform:
-    translateY(-18px)
+    translateY(-15px)
     rotate(calc(var(--fan-offset) * 1.6deg))
-    scale(1.06);
+    scale(1.05);
+}
+
+#player-hand .solo-card.hovering {
+  transform:
+    translateY(calc(-18px + var(--fan-lift, 0px)))
+    rotate(calc(var(--fan-offset) * 1.45deg))
+    scale(1.055);
+  z-index: 450;
+}
+
+#player-hand .solo-card.neighbor-left {
+  transform:
+    translateY(calc(var(--fan-lift) + 4px))
+    rotate(calc(var(--fan-offset) * 3deg - 1.2deg));
+}
+
+#player-hand .solo-card.neighbor-right {
+  transform:
+    translateY(calc(var(--fan-lift) + 4px))
+    rotate(calc(var(--fan-offset) * 3deg + 1.2deg));
 }
 
 .solo-card.targetable,
@@ -446,6 +532,10 @@ body.solo-page {
 
 .solo-card.targetable {
   border-color: rgba(247, 201, 72, 0.78);
+  box-shadow:
+    0 0 0 1px rgba(247, 201, 72, 0.48),
+    0 0 26px rgba(247, 201, 72, 0.16),
+    0 16px 34px rgba(0, 0, 0, 0.34);
 }
 
 .solo-card.can-attack {
@@ -458,6 +548,7 @@ body.solo-page {
 
 .solo-card.exhausted {
   filter: saturate(0.72) brightness(0.84);
+  transform: translateY(3px);
 }
 
 #player-hand .solo-card.exhausted {
@@ -477,7 +568,9 @@ body.solo-page {
 }
 
 .solo-card.damaged::after {
-  background: linear-gradient(180deg, transparent, rgba(255, 63, 106, 0.12));
+  background:
+    radial-gradient(circle at 85% 18%, rgba(255, 94, 132, 0.18), transparent 36%),
+    linear-gradient(180deg, transparent, rgba(255, 63, 106, 0.14));
 }
 
 .solo-card.hit-card::after {
@@ -490,6 +583,39 @@ body.solo-page {
 
 .solo-card.new-card::after {
   box-shadow: inset 0 0 0 2px rgba(50, 255, 205, 0.46), inset 0 0 38px rgba(50, 255, 205, 0.12);
+}
+
+#player-hand .solo-card.selected {
+  transform:
+    translateY(calc(-10px + var(--fan-lift)))
+    rotate(calc(var(--fan-offset) * 1.8deg))
+    scale(1.04);
+}
+
+#player-hand .solo-card.dragging {
+  position: fixed;
+  margin: 0;
+  pointer-events: none;
+  z-index: 850;
+  transition: none;
+  transform: translate3d(var(--drag-x, 0px), var(--drag-y, 0px), 0) rotate(2.3deg) scale(1.05);
+  box-shadow:
+    0 24px 52px rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(125, 236, 255, 0.36);
+}
+
+#player-hand .solo-card.drag-source {
+  opacity: 0.22;
+}
+
+.solo-card.exiting {
+  pointer-events: none;
+  animation: cardExit 180ms ease forwards;
+}
+
+.solo-card.entering {
+  pointer-events: none;
+  animation: cardEnter 170ms cubic-bezier(0.2, 0.8, 0.22, 1);
 }
 
 .solo-card-art {
@@ -716,6 +842,33 @@ body.solo-page {
   color: rgba(198, 219, 231, 0.48);
 }
 
+@keyframes linePulse {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -6; }
+}
+
+@keyframes cardExit {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-18px) scale(0.9); }
+}
+
+@keyframes cardEnter {
+  0% { opacity: 0; transform: translateY(12px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes alertPulse {
+  0% { transform: scaleY(1); filter: brightness(1); }
+  50% { transform: scaleY(1.18); filter: brightness(1.22); }
+  100% { transform: scaleY(1); filter: brightness(1); }
+}
+
+@keyframes gigPulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
 .hand-tray {
   position: relative;
   padding: 0.72rem 0.8rem 0.12rem;
@@ -867,6 +1020,34 @@ body.solo-page {
   box-shadow:
     0 24px 60px rgba(0, 0, 0, 0.58),
     0 0 0 1px rgba(125, 236, 255, 0.16);
+}
+
+.game-over-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 8, 14, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.game-over-overlay.is-hidden {
+  display: none;
+}
+
+.game-over-card {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1.2rem;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(12, 27, 36, 0.96), rgba(6, 14, 20, 0.94));
+  border: 1px solid var(--solo-border-strong);
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.44),
+    0 0 0 1px rgba(125, 236, 255, 0.12);
+  display: grid;
+  gap: 0.8rem;
+  text-align: center;
 }
 
 .turn-log-drawer {
