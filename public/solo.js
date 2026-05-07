@@ -1142,11 +1142,28 @@ function applyAdaptiveSizing() {
     const headHeight = previewHead ? previewHead.offsetHeight : 0;
     const viewportRoom = Math.max(140, window.innerHeight - overlayRect.top - 14);
     const previewBodyRoom = Math.max(140, elements.cardPreview ? elements.cardPreview.clientHeight : 140);
-    const frameHeight = Math.max(140, Math.min(viewportRoom - headHeight - 8, previewBodyRoom, 560));
-    const frameWidth = frameHeight * (63 / 88);
+    let frameHeight = Math.max(140, Math.min(viewportRoom - headHeight - 8, previewBodyRoom, 560));
+    let frameWidth = frameHeight * (63 / 88);
+
+    const previewImg = frame.querySelector('img');
+    if (previewImg && previewImg.naturalWidth > 0 && previewImg.naturalHeight > 0) {
+      // Avoid upscaling beyond source pixels for the current DPR.
+      const dpr = window.devicePixelRatio || 1;
+      const maxCssWidthFromSource = previewImg.naturalWidth / dpr;
+      const maxCssHeightFromSource = previewImg.naturalHeight / dpr;
+      frameWidth = Math.min(frameWidth, maxCssWidthFromSource);
+      frameHeight = Math.min(frameHeight, maxCssHeightFromSource);
+    }
+
+    // Snap to device-pixel boundaries to reduce subpixel resampling blur.
+    const dpr = window.devicePixelRatio || 1;
+    const snapCssPx = value => Math.max(1, Math.floor(value * dpr) / dpr);
+    frameWidth = snapCssPx(frameWidth);
+    frameHeight = snapCssPx(frameHeight);
+
     frame.style.height = `${frameHeight}px`;
     frame.style.maxHeight = `${frameHeight}px`;
-    frame.style.width = `min(100%, ${frameWidth}px)`;
+    frame.style.width = `${frameWidth}px`;
   }
 }
 
@@ -1171,6 +1188,8 @@ function renderPreview() {
         : `<div class="solo-card-placeholder preview-placeholder">${data.placeholder ? 'Boss Asset' : 'No Art'}</div>`}
     </div>
   `;
+  const previewImg = elements.cardPreview.querySelector('.preview-image-frame img');
+  if (previewImg) previewImg.addEventListener('load', applyAdaptiveSizing, { once: true });
   fitPreviewHeaderTitle();
   applyAdaptiveSizing();
   wirePreviewZoom();

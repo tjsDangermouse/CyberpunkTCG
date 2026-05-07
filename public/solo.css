@@ -838,7 +838,8 @@ body.solo-page {
 }
 
 .preview-image-frame img {
-  object-fit: cover;
+  object-fit: contain;
+  background: #04090f;
 }
 
 .preview-zoom {
