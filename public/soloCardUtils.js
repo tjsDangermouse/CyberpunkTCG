@@ -131,8 +131,9 @@
   }
 
   function currentDeckRecord() {
-    const decks = JSON.parse(localStorage.getItem('cyberpunk-decks') || '[]');
-    const currentDeckId = localStorage.getItem('cyberpunk-current-deck');
+    const state = window.DeckStore?.getState?.() || {};
+    const decks = Array.isArray(state.decks) ? state.decks : [];
+    const currentDeckId = state.currentDeckId || null;
     return decks.find(deck => deck.id === currentDeckId) || null;
   }
 

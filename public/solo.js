@@ -45,6 +45,9 @@ const elements = {
   previewTitle: document.getElementById('preview-title'),
   previewZoom: document.getElementById('preview-zoom'),
   previewZoomImage: document.getElementById('preview-zoom-image'),
+  nextMovePopup: document.getElementById('next-move-popup'),
+  nextMoveTitle: document.getElementById('next-move-title'),
+  nextMoveText: document.getElementById('next-move-text'),
   runSummary: document.getElementById('run-summary'),
   startBtn: document.getElementById('start-btn'),
   playBtn: document.getElementById('play-btn'),
@@ -57,12 +60,59 @@ const elements = {
   gameOverOverlay: document.getElementById('game-over-overlay'),
   gameOverTitle: document.getElementById('game-over-title'),
   gameOverText: document.getElementById('game-over-text'),
+  deckChoiceOverlay: document.getElementById('deck-choice-overlay'),
+  deckChoiceList: document.getElementById('deck-choice-list'),
+  deckChoiceConfirmBtn: document.getElementById('deck-choice-confirm-btn'),
   soloBoard: document.getElementById('solo-board'),
   playerZone: document.getElementById('player-zone'),
   playerRail: document.querySelector('.player-rail'),
   interactionLines: document.getElementById('interaction-lines'),
   attackLine: document.getElementById('attack-line'),
 };
+
+async function chooseSoloDeck() {
+  const deckState = window.DeckStore.getState();
+  const decks = Array.isArray(deckState.decks) ? deckState.decks : [];
+  if (decks.length === 0) return;
+
+  let selectedDeckId = deckState.currentDeckId && decks.some(deck => deck.id === deckState.currentDeckId)
+    ? deckState.currentDeckId
+    : decks[0].id;
+
+  const deckCountLabel = deck => `${Object.values(deck.cards || {}).reduce((sum, qty) => sum + (Number(qty) || 0), 0)} cards`;
+  const renderChoices = () => {
+    elements.deckChoiceList.innerHTML = decks.map(deck => `
+      <button class="deck-choice-item ${deck.id === selectedDeckId ? 'active' : ''}" type="button" data-deck-id="${deck.id}">
+        <span>${deck.name}</span>
+        <span>${deckCountLabel(deck)}</span>
+      </button>
+    `).join('');
+  };
+
+  return new Promise(resolve => {
+    const closeModal = async () => {
+      await window.DeckStore.save({ decks, currentDeckId: selectedDeckId });
+      elements.deckChoiceOverlay.classList.add('is-hidden');
+      elements.deckChoiceOverlay.setAttribute('aria-hidden', 'true');
+      resolve();
+    };
+
+    renderChoices();
+    elements.deckChoiceOverlay.classList.remove('is-hidden');
+    elements.deckChoiceOverlay.setAttribute('aria-hidden', 'false');
+
+    elements.deckChoiceList.onclick = event => {
+      const choice = event.target.closest('[data-deck-id]');
+      if (!choice) return;
+      selectedDeckId = choice.dataset.deckId;
+      renderChoices();
+    };
+
+    elements.deckChoiceConfirmBtn.onclick = () => {
+      closeModal().catch(console.error);
+    };
+  });
+}
 
 function typeClass(type) {
   return type ? `type-${type.toLowerCase()}` : '';
@@ -449,6 +499,121 @@ function renderMeta() {
   if (state.phase === PHASES.GAME_OVER) elements.phaseChips.gameOver.classList.add('active');
 }
 
+function deriveNextMove() {
+  if (state.mode === 'pregame') {
+    return {
+      title: 'Start the run',
+      text: 'Press Start Run to shuffle your deck, draw five cards, and begin the encounter.',
+    };
+  }
+
+  if (state.status === STATUSES.WON) {
+    return {
+      title: 'Run complete',
+      text: 'You secured all three gigs. Press Restart Run to play again.',
+    };
+  }
+
+  if (state.status === STATUSES.LOST) {
+    return {
+      title: 'Run failed',
+      text: 'The encounter is over. Press Restart Run to reset the board and try again.',
+    };
+  }
+
+  if (state.phase === PHASES.PLAYER_MAIN) {
+    const playableSelected = state.player.hand.find(card => card.instanceId === state.selectedCardId && Game.canPlayCard(state, card));
+    const affordableBoardCard = state.player.hand.find(card => Game.canPlayCard(state, card) && CardUtils.isSupportedBoardCard(card));
+    const unsupportedAffordable = state.player.hand.find(card => Game.canPlayCard(state, card) && !CardUtils.isSupportedBoardCard(card));
+
+    if (playableSelected) {
+      if (CardUtils.isSupportedBoardCard(playableSelected)) {
+        return {
+          title: 'Play selected card',
+          text: `Press Play to deploy ${CardUtils.getCardName(playableSelected)} onto your board exhausted.`,
+        };
+      }
+      return {
+        title: 'Convert selected card',
+        text: `Press Play to discard ${CardUtils.getCardName(playableSelected)} for +1 credit in the prototype rules.`,
+      };
+    }
+
+    if (affordableBoardCard || unsupportedAffordable) {
+      return {
+        title: 'Choose a hand card',
+        text: 'Click a card in your hand, then press Play. Units and Legends enter the board. Other cards convert into +1 credit for now.',
+      };
+    }
+
+    if (state.player.hand.length > 0) {
+      return {
+        title: 'Advance the turn',
+        text: 'You do not currently have a playable card. Press End Main to move into the attack phase.',
+      };
+    }
+
+    return {
+      title: 'End main phase',
+      text: 'Your hand is empty. Press End Main to move into the attack phase.',
+    };
+  }
+
+  if (state.phase === PHASES.PLAYER_ATTACK) {
+    const legalTargets = legalTargetIds();
+    if (!state.selectedAttackerId) {
+      const readyUnit = state.player.board.find(card => card.ready);
+      if (readyUnit) {
+        return {
+          title: 'Choose an attacker',
+          text: legalTargets.length > 0 && state.boss.board.length > 0
+            ? 'Click a ready unit on your board, then click a glowing defender to attack it.'
+            : 'Click a ready unit on your board. If no defenders remain, that unit can secure a glowing open gig.',
+        };
+      }
+      return {
+        title: 'No attacks available',
+        text: 'You have no ready units. Press End Turn to hand play to Arasaka.',
+      };
+    }
+
+    const attacker = presentationalLookup.get(state.selectedAttackerId);
+    if (attacker && !state.selectedTargetId) {
+      return {
+        title: 'Choose a target',
+        text: state.boss.board.length > 0
+          ? `Click a glowing defender to attack with ${CardUtils.getCardName(attacker)}.`
+          : `Click a glowing open gig to secure it with ${CardUtils.getCardName(attacker)}.`,
+      };
+    }
+
+    if (state.selectedTargetId) {
+      return {
+        title: 'Resolve the attack',
+        text: 'Press Confirm Target to resolve the selected attack, or choose a different legal target.',
+      };
+    }
+  }
+
+  if (state.phase === PHASES.BOSS_TURN) {
+    return {
+      title: 'Boss resolving',
+      text: 'Arasaka is executing its defense step. Wait for the board to refresh back to your main phase.',
+    };
+  }
+
+  return {
+    title: 'Continue the encounter',
+    text: 'Follow the enabled controls to advance the run.',
+  };
+}
+
+function renderNextMove() {
+  const instruction = deriveNextMove();
+  elements.nextMoveTitle.textContent = instruction.title;
+  elements.nextMoveText.textContent = instruction.text;
+}
+
 function renderControls() {
   const selectedBoardCard = state.player.board.find(card => card.instanceId === state.selectedCardId);
   const selectedTargetLegal = legalTargetIds().includes(state.selectedTargetId);
@@ -740,6 +905,7 @@ function render() {
   renderControls();
   renderLog();
   renderPreview();
+  renderNextMove();
   renderGameOverOverlay();
   applyAdaptiveSizing();
   attachInteractions();
@@ -788,7 +954,9 @@ fetch('cards.json')
     if (!response.ok) throw new Error('cards.json not found');
     return response.json();
   })
-  .then(cards => {
+  .then(async cards => {
+    await window.DeckStore.init();
+    await chooseSoloDeck();
     cardsBySlug = new Map(cards.map(card => [card.slug, card]));
     state = Game.createInitialState(cardsBySlug);
     wireControls();

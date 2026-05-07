@@ -4,6 +4,8 @@ const path = require('path');
 
 const PORT = 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const DATA_DIR = path.join(__dirname, 'data');
+const DECKS_PATH = path.join(DATA_DIR, 'decks.json');
 
 const MIME = {
   '.html': 'text/html',
@@ -18,8 +20,85 @@ const MIME = {
   '.ico': 'image/x-icon',
 };
 
+function ensureDeckStore() {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (!fs.existsSync(DECKS_PATH)) {
+    fs.writeFileSync(DECKS_PATH, JSON.stringify({ decks: [], currentDeckId: null }, null, 2));
+  }
+}
+
+function readDeckState() {
+  ensureDeckStore();
+  try {
+    const raw = fs.readFileSync(DECKS_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    const decks = Array.isArray(parsed?.decks) ? parsed.decks : [];
+    const currentDeckId = typeof parsed?.currentDeckId === 'string' ? parsed.currentDeckId : null;
+    return { decks, currentDeckId };
+  } catch {
+    return { decks: [], currentDeckId: null };
+  }
+}
+
+function writeDeckState(nextState) {
+  ensureDeckStore();
+  fs.writeFileSync(DECKS_PATH, JSON.stringify(nextState, null, 2));
+}
+
+function sendJson(res, statusCode, payload) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(payload));
+}
+
 const server = http.createServer((req, res) => {
   let urlPath = req.url.split('?')[0];
+  if (urlPath === '/api/decks') {
+    if (req.method === 'GET') {
+      sendJson(res, 200, readDeckState());
+      return;
+    }
+
+    if (req.method === 'PUT') {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk;
+      });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          const decks = Array.isArray(parsed?.decks) ? parsed.decks : null;
+          const currentDeckId = parsed?.currentDeckId === null || typeof parsed?.currentDeckId === 'string'
+            ? parsed.currentDeckId
+            : undefined;
+
+          if (!decks || currentDeckId === undefined) {
+            sendJson(res, 400, { error: 'Invalid deck payload' });
+            return;
+          }
+
+          const sanitizedDecks = decks
+            .filter(deck => deck && typeof deck === 'object')
+            .map(deck => ({
+              id: String(deck.id || ''),
+              name: String(deck.name || 'Untitled Deck'),
+              cards: deck.cards && typeof deck.cards === 'object' ? deck.cards : {},
+            }))
+            .filter(deck => deck.id.length > 0);
+
+          const state = { decks: sanitizedDecks, currentDeckId };
+          writeDeckState(state);
+          sendJson(res, 200, state);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON' });
+        }
+      });
+      return;
+    }
+
+    sendJson(res, 405, { error: 'Method not allowed' });
+    return;
+  }
+
   if (urlPath === '/') urlPath = '/index.html';
 
   const filePath = path.join(PUBLIC_DIR, urlPath);

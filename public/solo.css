@@ -1036,6 +1036,57 @@ body.solo-page {
   display: none;
 }
 
+.deck-choice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 8, 14, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.deck-choice-overlay.is-hidden {
+  display: none;
+}
+
+.deck-choice-card {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 1.2rem;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(12, 27, 36, 0.96), rgba(6, 14, 20, 0.94));
+  border: 1px solid var(--solo-border-strong);
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.44),
+    0 0 0 1px rgba(125, 236, 255, 0.12);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.deck-choice-list {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.deck-choice-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 0.8rem;
+  border-radius: 14px;
+  border: 1px solid rgba(145, 210, 255, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--solo-text);
+  cursor: pointer;
+}
+
+.deck-choice-item.active {
+  border-color: rgba(248, 222, 118, 0.7);
+  background: rgba(248, 222, 118, 0.12);
+}
+
 .game-over-card {
   width: min(28rem, calc(100vw - 2rem));
   padding: 1.2rem;
@@ -1048,6 +1099,37 @@ body.solo-page {
   display: grid;
   gap: 0.8rem;
   text-align: center;
+}
+
+.next-move-popup {
+  position: fixed;
+  right: 1.1rem;
+  bottom: 1rem;
+  z-index: 40;
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 0.8rem 0.9rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(12, 27, 36, 0.96), rgba(6, 14, 20, 0.94));
+  border: 1px solid var(--solo-border-strong);
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.36),
+    0 0 0 1px rgba(125, 236, 255, 0.12);
+  display: grid;
+  gap: 0.28rem;
+  pointer-events: none;
+}
+
+.next-move-popup h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.next-move-popup .run-summary {
+  margin: 0;
+  font-size: 0.74rem;
 }
 
 .turn-log-drawer {
@@ -1162,6 +1244,13 @@ body.solo-page {
     margin-top: 1rem;
   }
 
+  .next-move-popup {
+    position: static;
+    width: auto;
+    margin-top: 0.75rem;
+    pointer-events: auto;
+  }
+
   .hand-stage {
     grid-column: 1;
     grid-row: 3;
@@ -1203,7 +1292,8 @@ body.solo-page {
   .corner-hud,
   .action-bar,
   .card-preview-overlay,
-  .turn-log-drawer {
+  .turn-log-drawer,
+  .next-move-popup {
     border-radius: 16px;
   }
 

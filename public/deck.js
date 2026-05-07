@@ -1,6 +1,7 @@
 let allCards = [];
 let decks = [];
 let currentDeck = null;
+let currentDeckId = null;
 
 // DOM elements
 const deckList = document.getElementById('deck-list');
@@ -34,14 +35,16 @@ function cardImageSrc(card) {
 }
 
 function saveDecks() {
-  localStorage.setItem('cyberpunk-decks', JSON.stringify(decks));
+  return window.DeckStore.save({
+    decks,
+    currentDeckId,
+  });
 }
 
 function loadDecks() {
-  const saved = localStorage.getItem('cyberpunk-decks');
-  if (saved) {
-    decks = JSON.parse(saved);
-  }
+  const state = window.DeckStore.getState();
+  decks = state.decks || [];
+  currentDeckId = state.currentDeckId || null;
 }
 
 function generateDeckId() {
@@ -56,15 +59,16 @@ function createDeck(name) {
     cards: {} // slug -> quantity
   };
   decks.push(deck);
-  saveDecks();
+  saveDecks().catch(console.error);
   renderDeckList();
   selectDeck(deck.id);
 }
 
 function selectDeck(deckId) {
+  currentDeckId = deckId;
   currentDeck = decks.find(d => d.id === deckId);
   if (currentDeck) {
-    localStorage.setItem('cyberpunk-current-deck', deckId);
+    saveDecks().catch(console.error);
     renderDeckHeader();
     renderDeckContent();
   }
@@ -74,7 +78,7 @@ function updateDeckName(deckId, newName) {
   const deck = decks.find(d => d.id === deckId);
   if (deck) {
     deck.name = newName;
-    saveDecks();
+    saveDecks().catch(console.error);
     renderDeckList();
     if (currentDeck && currentDeck.id === deckId) {
       renderDeckHeader();
@@ -84,10 +88,10 @@ function updateDeckName(deckId, newName) {
 
 function deleteDeck(deckId) {
   decks = decks.filter(d => d.id !== deckId);
-  saveDecks();
+  if (currentDeckId === deckId) currentDeckId = null;
+  saveDecks().catch(console.error);
   renderDeckList();
   if (currentDeck && currentDeck.id === deckId) {
-    localStorage.removeItem('cyberpunk-current-deck');
     currentDeck = null;
     deckHeader.style.display = 'none';
     deckContent.innerHTML = `
@@ -101,7 +105,7 @@ function deleteDeck(deckId) {
 function addCardToDeck(cardSlug, quantity = 1) {
   if (!currentDeck) return;
   currentDeck.cards[cardSlug] = (currentDeck.cards[cardSlug] || 0) + quantity;
-  saveDecks();
+  saveDecks().catch(console.error);
   renderDeckContent();
   renderDeckHeader();
 }
@@ -113,7 +117,7 @@ function updateCardQuantity(cardSlug, quantity) {
   } else {
     currentDeck.cards[cardSlug] = quantity;
   }
-  saveDecks();
+  saveDecks().catch(console.error);
   renderDeckContent();
   renderDeckHeader();
 }
@@ -121,7 +125,7 @@ function updateCardQuantity(cardSlug, quantity) {
 function removeCardFromDeck(cardSlug) {
   if (!currentDeck) return;
   delete currentDeck.cards[cardSlug];
-  saveDecks();
+  saveDecks().catch(console.error);
   renderDeckContent();
   renderDeckHeader();
 }
@@ -263,8 +267,16 @@ fetch('cards.json')
   })
   .then(data => {
     allCards = data;
+    return window.DeckStore.init();
+  })
+  .then(() => {
     loadDecks();
+    if (currentDeckId) currentDeck = decks.find(deck => deck.id === currentDeckId) || null;
     renderDeckList();
+    if (currentDeck) {
+      renderDeckHeader();
+      renderDeckContent();
+    }
   })
   .catch(err => {
     deckContent.innerHTML = `

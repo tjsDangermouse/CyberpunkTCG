@@ -1,0 +1,45 @@
+{
+  "decks": [
+    {
+      "id": "arasaka",
+      "name": "Arasaka",
+      "cards": {
+        "mantis-blades": 3,
+        "satori-sword-of-saburo": 2,
+        "industrial-assembly": 3,
+        "corporate-surveillance": 3,
+        "corpo-security": 3,
+        "ruthless-lowlife": 2,
+        "sandevistan": 2,
+        "swordwise-huscle": 3,
+        "emergency-atlus": 3,
+        "goro-takemura-losing-his-way": 2,
+        "armored-minotaur": 1,
+        "yorinobu-arasaka-embracing-destruction": 1,
+        "goro-takemura-hands-unclean": 1,
+        "saburo-arasaka-stubborn-patriach": 1
+      }
+    },
+    {
+      "id": "merc",
+      "name": "Merc",
+      "cards": {
+        "kiroshi-optics": 3,
+        "mandibular-upgrade": 2,
+        "dying-night-v-s-pistol": 2,
+        "reboot-optics": 3,
+        "secondhand-bombus": 3,
+        "evelyn-parker-scheming-siren": 2,
+        "floor-it": 3,
+        "t-bug-amateur-philosopher": 3,
+        "delamain-cab": 3,
+        "mt0d12-flathead": 2,
+        "jackie-welles-ride-or-die-choom": 1,
+        "jackie-welles-pour-one-out-for-me": 1,
+        "v-corporate-exile": 1,
+        "viktor-vektor-sit-down-and-relax": 1
+      }
+    }
+  ],
+  "currentDeckId": "merc"
+}

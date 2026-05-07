@@ -46,16 +46,10 @@ function buildSelectedCardsWithQuantities() {
   return selected;
 }
 
-function loadDeckOptions() {
-  const saved = localStorage.getItem('cyberpunk-decks');
-  if (!saved) return;
-  try {
-    decks = JSON.parse(saved) || [];
-  } catch {
-    decks = [];
-  }
-
-  if (!Array.isArray(decks)) decks = [];
+async function loadDeckOptions() {
+  await window.DeckStore.init();
+  const state = window.DeckStore.getState();
+  decks = Array.isArray(state.decks) ? state.decks : [];
 
   const options = decks.map(deck => {
     const count = Object.values(deck.cards || {}).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
@@ -64,7 +58,7 @@ function loadDeckOptions() {
 
   deckSelectEl.innerHTML = `<option value="">Manual selection</option>${options}`;
 
-  const currentDeckId = localStorage.getItem('cyberpunk-current-deck');
+  const currentDeckId = state.currentDeckId;
   if (currentDeckId && decks.some(d => d.id === currentDeckId)) {
     deckSelectEl.value = currentDeckId;
   }
@@ -292,11 +286,11 @@ fetch('cards.json')
     if (!r.ok) throw new Error('cards.json not found — run npm run scrape first');
     return r.json();
   })
-  .then(data => {
+  .then(async data => {
     allCards = data;
     // Pre-select all cards
     data.forEach(c => selectedCounts.set(c.slug, 1));
-    loadDeckOptions();
+    await loadDeckOptions();
     renderSelector();
   })
   .catch(err => {

@@ -153,9 +153,11 @@ function closeModal() {
   document.body.style.overflow = '';
 }
 
-function addToDeck(cardSlug) {
-  const decks = JSON.parse(localStorage.getItem('cyberpunk-decks') || '[]');
-  const currentDeckId = localStorage.getItem('cyberpunk-current-deck');
+async function addToDeck(cardSlug) {
+  await window.DeckStore.init();
+  const deckState = window.DeckStore.getState();
+  const decks = deckState.decks || [];
+  const currentDeckId = deckState.currentDeckId;
 
   if (!currentDeckId || !decks.find(d => d.id === currentDeckId)) {
     alert('No deck selected. Please go to the Decks page and select or create a deck first.');
@@ -164,7 +166,7 @@ function addToDeck(cardSlug) {
 
   const deck = decks.find(d => d.id === currentDeckId);
   deck.cards[cardSlug] = (deck.cards[cardSlug] || 0) + 1;
-  localStorage.setItem('cyberpunk-decks', JSON.stringify(decks));
+  await window.DeckStore.save({ decks, currentDeckId });
 
   alert(`Added ${allCards.find(c => c.slug === cardSlug)?.name || cardSlug} to ${deck.name}`);
 }

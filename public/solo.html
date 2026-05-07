@@ -120,6 +120,11 @@
   <div id="preview-zoom" class="preview-zoom" aria-hidden="true">
     <img id="preview-zoom-image" alt="">
   </div>
+  <aside id="next-move-popup" class="next-move-popup" aria-live="polite">
+    <p class="zone-label">Next Move</p>
+    <h2 id="next-move-title">Start the run</h2>
+    <p id="next-move-text" class="run-summary">Press Start Run to shuffle your deck, draw five cards, and begin the encounter.</p>
+  </aside>
   <div id="game-over-overlay" class="game-over-overlay is-hidden" aria-hidden="true">
     <div class="game-over-card">
       <p class="zone-label">Encounter Result</p>
@@ -128,9 +133,19 @@
       <button id="restart-run-btn" class="btn btn-gold" type="button">Restart Run</button>
     </div>
   </div>
+  <div id="deck-choice-overlay" class="deck-choice-overlay is-hidden" aria-hidden="true">
+    <div class="deck-choice-card">
+      <p class="zone-label">Solo Setup</p>
+      <h2>Choose Deck</h2>
+      <p class="run-summary">Select the deck to use for this run.</p>
+      <div id="deck-choice-list" class="deck-choice-list"></div>
+      <button id="deck-choice-confirm-btn" class="btn btn-gold" type="button">Use Selected Deck</button>
+    </div>
+  </div>
 
   <script src="soloGameTypes.js"></script>
   <script src="soloBosses.js"></script>
+  <script src="deckStore.js"></script>
   <script src="soloCardUtils.js"></script>
   <script src="soloGameReducer.js"></script>
   <script src="solo.js"></script>
