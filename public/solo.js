@@ -71,6 +71,8 @@ const elements = {
   cardPreview: document.getElementById('card-preview'),
   cardPreviewOverlay: document.getElementById('card-preview-overlay'),
   previewTitle: document.getElementById('preview-title'),
+  previewZoom: document.getElementById('preview-zoom'),
+  previewZoomImage: document.getElementById('preview-zoom-image'),
   runSummary: document.getElementById('run-summary'),
   startBtn: document.getElementById('start-btn'),
   endPhaseBtn: document.getElementById('end-phase-btn'),
@@ -870,6 +872,7 @@ function renderCard(card, options = {}) {
   const maxHealth = getCardHealth(card);
   const classes = [
     'solo-card',
+    options.bossZone ? 'boss-asset-card' : '',
     options.hand ? 'hand-card' : '',
     card.ready === false ? 'exhausted' : '',
     card.damage > 0 && maxHealth > 0 ? 'damaged' : '',
@@ -881,10 +884,12 @@ function renderCard(card, options = {}) {
     card.flash || '',
   ].filter(Boolean).join(' ');
   const fanOffset = options.fanOffset ?? 0;
+  const cardIdAttr = options.preview ? '' : ` data-card-id="${card.instanceId || ''}"`;
+  const tabIndexAttr = options.preview ? '' : ' tabindex="0"';
 
   if (options.hand || options.artOnly) {
     return `
-      <article class="${classes}" data-card-id="${card.instanceId || ''}" tabindex="0" style="--fan-offset:${fanOffset};--fan-lift:${Math.abs(fanOffset) * 2}px;--fan-layer:${100 + (options.handIndex || 0)};--fan-overlap:${Math.max(0, 42 - (options.handCount || 0) * 2)}px;">
+      <article class="${classes}"${cardIdAttr}${tabIndexAttr} style="--fan-offset:${fanOffset};--fan-lift:${Math.abs(fanOffset) * 2}px;--fan-layer:${100 + (options.handIndex || 0)};--fan-overlap:${Math.max(0, 42 - (options.handCount || 0) * 2)}px;">
         <div class="solo-card-art hand-card-art">
           ${imgSrc
             ? `<img src="${imgSrc}" alt="${data.name}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder&quot;>No Art</div>'">`
@@ -895,7 +900,7 @@ function renderCard(card, options = {}) {
   }
 
   return `
-    <article class="${classes}" data-card-id="${card.instanceId || ''}" tabindex="0" style="--fan-offset:${fanOffset};--fan-lift:${options.hand ? Math.abs(fanOffset) * 2 : 0}px;--fan-layer:${options.hand ? 100 + (options.handIndex || 0) : 1};--fan-overlap:${options.hand ? Math.max(0, 42 - (options.handCount || 0) * 2) : 0}px;">
+    <article class="${classes}"${cardIdAttr}${tabIndexAttr} style="--fan-offset:${fanOffset};--fan-lift:${options.hand ? Math.abs(fanOffset) * 2 : 0}px;--fan-layer:${options.hand ? 100 + (options.handIndex || 0) : 1};--fan-overlap:${options.hand ? Math.max(0, 42 - (options.handCount || 0) * 2) : 0}px;">
       <div class="solo-card-art">
         ${imgSrc
           ? `<img src="${imgSrc}" alt="${data.name}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder&quot;>No Art</div>'">`
@@ -975,6 +980,7 @@ function renderZoneCards(container, cards, options = {}) {
   container.innerHTML = cards.map((card, index) => renderCard(card, {
     hand: options.hand,
     artOnly: options.artOnly,
+    bossZone: options.bossZone,
     selected: state.selectedCardId === card.instanceId || state.selectedTargetId === card.instanceId,
     targetable: options.targetCheck ? options.targetCheck(card) : false,
     canAttack: options.canAttackCheck ? options.canAttackCheck(card) : false,
@@ -1027,12 +1033,130 @@ function getPreviewCard() {
   return state.lastPreviewCard || null;
 }
 
+function fitPreviewHeaderTitle() {
+  const title = elements.previewTitle;
+  if (!title) return;
+
+  title.style.fontSize = '';
+  title.style.whiteSpace = '';
+
+  const computed = window.getComputedStyle(title);
+  const initialSize = Number.parseFloat(computed.fontSize) || 16;
+  const minSize = 10;
+  let size = initialSize;
+
+  title.style.whiteSpace = 'nowrap';
+  title.style.fontSize = `${initialSize}px`;
+
+  while (title.scrollWidth > title.clientWidth && size > minSize) {
+    size -= 0.5;
+    title.style.fontSize = `${size}px`;
+  }
+}
+
+function fitBossAssetText() {
+  const bossCards = elements.bossBoard ? [...elements.bossBoard.querySelectorAll('.solo-card.boss-asset-card')] : [];
+  bossCards.forEach(card => {
+    const body = card.querySelector('.solo-card-body');
+    const name = card.querySelector('.solo-card-body h3');
+    const sub = card.querySelector('.solo-card-sub');
+    const text = card.querySelector('.solo-card-text');
+    if (!body || !name || !sub || !text) return;
+
+    name.style.fontSize = '';
+    sub.style.fontSize = '';
+    text.style.fontSize = '';
+    text.style.lineHeight = '';
+
+    let nameSize = Number.parseFloat(window.getComputedStyle(name).fontSize) || 13.5;
+    let subSize = Number.parseFloat(window.getComputedStyle(sub).fontSize) || 10;
+    let textSize = Number.parseFloat(window.getComputedStyle(text).fontSize) || 10;
+    let lineHeight = 1.2;
+    let guard = 0;
+
+    while (body.scrollHeight > body.clientHeight && guard < 20) {
+      if (nameSize > 10.5) nameSize -= 0.4;
+      if (subSize > 8.8) subSize -= 0.25;
+      if (textSize > 8.4) textSize -= 0.25;
+      if (lineHeight > 1.05) lineHeight -= 0.03;
+      name.style.fontSize = `${nameSize}px`;
+      sub.style.fontSize = `${subSize}px`;
+      text.style.fontSize = `${textSize}px`;
+      text.style.lineHeight = `${lineHeight}`;
+      guard += 1;
+    }
+  });
+}
+
+function hidePreviewZoom() {
+  if (!elements.previewZoom || !elements.previewZoomImage) return;
+  elements.previewZoom.classList.remove('is-visible');
+  elements.previewZoom.setAttribute('aria-hidden', 'true');
+  elements.previewZoomImage.removeAttribute('src');
+  elements.previewZoomImage.alt = '';
+}
+
+function wirePreviewZoom() {
+  const frame = elements.cardPreview ? elements.cardPreview.querySelector('.preview-image-frame') : null;
+  const img = frame ? frame.querySelector('img') : null;
+  if (!frame || !img || !elements.previewZoom || !elements.previewZoomImage) {
+    hidePreviewZoom();
+    return;
+  }
+
+  frame.addEventListener('mouseenter', () => {
+    const src = img.getAttribute('src');
+    if (!src) return;
+    elements.previewZoomImage.src = src;
+    elements.previewZoomImage.alt = img.getAttribute('alt') || '';
+    elements.previewZoom.classList.add('is-visible');
+    elements.previewZoom.setAttribute('aria-hidden', 'false');
+  });
+
+  frame.addEventListener('mouseleave', hidePreviewZoom);
+}
+
+function applyAdaptiveSizing() {
+  const viewportHeight = window.innerHeight || 900;
+
+  // Fit boss asset cards by viewport height and available row width.
+  const bossCards = elements.bossBoard ? [...elements.bossBoard.querySelectorAll('.solo-card')] : [];
+  if (bossCards.length > 0 && elements.bossBoard) {
+    const targetCardHeight = Math.max(112, Math.min(186, viewportHeight * 0.22));
+    const targetCardWidth = targetCardHeight * (63 / 88);
+    const boardWidth = Math.max(0, elements.bossBoard.clientWidth - 16);
+    const perCardWidth = boardWidth > 0 ? (boardWidth / bossCards.length) * 0.86 : targetCardWidth;
+    const cardWidth = Math.max(80, Math.min(targetCardWidth, perCardWidth));
+    bossCards.forEach(card => {
+      card.style.width = `${cardWidth}px`;
+      card.style.minWidth = `${cardWidth}px`;
+    });
+    fitBossAssetText();
+  }
+
+  // Fit preview frame to available viewport/container height.
+  const frame = elements.cardPreview ? elements.cardPreview.querySelector('.preview-image-frame') : null;
+  if (frame && elements.cardPreviewOverlay) {
+    const overlayRect = elements.cardPreviewOverlay.getBoundingClientRect();
+    const previewHead = elements.cardPreviewOverlay.querySelector('.preview-head');
+    const headHeight = previewHead ? previewHead.offsetHeight : 0;
+    const viewportRoom = Math.max(140, window.innerHeight - overlayRect.top - 14);
+    const previewBodyRoom = Math.max(140, elements.cardPreview ? elements.cardPreview.clientHeight : 140);
+    const frameHeight = Math.max(140, Math.min(viewportRoom - headHeight - 8, previewBodyRoom, 560));
+    const frameWidth = frameHeight * (63 / 88);
+    frame.style.height = `${frameHeight}px`;
+    frame.style.maxHeight = `${frameHeight}px`;
+    frame.style.width = `min(100%, ${frameWidth}px)`;
+  }
+}
+
 function renderPreview() {
   const preview = getPreviewCard();
   if (!preview) {
     elements.cardPreviewOverlay.classList.add('is-hidden');
     elements.previewTitle.textContent = 'Hover a card';
     elements.cardPreview.innerHTML = `<div class="empty-preview">Card art appears here when you hover or select a card.</div>`;
+    hidePreviewZoom();
     return;
   }
 
@@ -1047,6 +1171,9 @@ function renderPreview() {
         : `<div class="solo-card-placeholder preview-placeholder">${data.placeholder ? 'Boss Asset' : 'No Art'}</div>`}
     </div>
   `;
+  fitPreviewHeaderTitle();
+  applyAdaptiveSizing();
+  wirePreviewZoom();
 }
 
 function renderMeta() {
@@ -1054,10 +1181,10 @@ function renderMeta() {
   elements.alertDisplay.textContent = `${state.boss.alert} / 10`;
   elements.objectiveProgress.textContent = `${progress} / ${OBJECTIVES_TO_WIN}`;
   elements.phaseDisplay.textContent = state.phase.replace('player-main', 'Player Main').replace('player-attack', 'Player Attack').replace('boss-turn', 'Boss Turn').replace('game-over', 'Game Over');
-  elements.bossMeta.textContent = `${state.boss.board.length} defenders online`;
-  elements.objectiveMeta.textContent = `${OBJECTIVES_TO_WIN - progress} gigs remaining`;
-  elements.playerMeta.textContent = `${state.player.board.length} units in play`;
-  elements.handMeta.textContent = `${state.player.hand.length} cards in hand`;
+  if (elements.bossMeta) elements.bossMeta.textContent = `${state.boss.board.length} defenders online`;
+  if (elements.objectiveMeta) elements.objectiveMeta.textContent = `${OBJECTIVES_TO_WIN - progress} gigs remaining`;
+  if (elements.playerMeta) elements.playerMeta.textContent = `${state.player.board.length} units in play`;
+  if (elements.handMeta) elements.handMeta.textContent = `${state.player.hand.length} cards in hand`;
 
   if (state.status === 'won' || state.status === 'lost') {
     elements.runSummary.textContent = state.gameOverReason;
@@ -1143,6 +1270,7 @@ function render() {
   renderBossCore();
   renderObjectives();
   renderZoneCards(elements.bossBoard, state.boss.board, {
+    bossZone: true,
     emptyText: 'No defenders online.',
     targetCheck: deriveTargetCheck,
     canBlockCheck: card => card.ready,
@@ -1162,6 +1290,7 @@ function render() {
   renderControls();
   renderLog();
   renderPreview();
+  applyAdaptiveSizing();
   attachInteractions();
 }
 
@@ -1185,6 +1314,12 @@ function wireControls() {
   elements.logCloseBtn.addEventListener('click', () => {
     ui.logOpen = false;
     renderLog();
+  });
+
+  window.addEventListener('resize', () => {
+    fitPreviewHeaderTitle();
+    applyAdaptiveSizing();
+    hidePreviewZoom();
   });
 }
 

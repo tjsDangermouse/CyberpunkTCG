@@ -79,11 +79,11 @@ body.solo-page {
 }
 
 .objective-belt {
-  padding-top: 0.45rem;
+  padding-top: 0;
 }
 
 .player-zone {
-  padding-top: 0.3rem;
+  padding-top: 0;
 }
 
 .zone-head {
@@ -102,6 +102,12 @@ body.solo-page {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+#preview-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
 }
 
 .zone-head.compact {
@@ -136,7 +142,7 @@ body.solo-page {
   display: grid;
   grid-template-columns: minmax(260px, 0.95fr) minmax(0, 1.7fr);
   gap: 0.75rem;
-  min-height: calc(100% - 3rem);
+  min-height: 100%;
 }
 
 .card-rail,
@@ -210,6 +216,20 @@ body.solo-page {
   align-items: center;
   justify-content: space-between;
   gap: 0.55rem;
+}
+
+.preview-head {
+  min-width: 0;
+}
+
+.preview-head .zone-label {
+  flex: 0 0 auto;
+}
+
+#preview-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .boss-core-title {
@@ -437,7 +457,6 @@ body.solo-page {
 }
 
 .solo-card.exhausted {
-  transform: rotate(-7deg) translateY(10px);
   filter: saturate(0.72) brightness(0.84);
 }
 
@@ -580,8 +599,12 @@ body.solo-page {
   width: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 0.65rem;
+}
+
+.corner-stack:has(.turn-log-drawer.is-open) {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
 
 .corner-hud {
@@ -699,8 +722,8 @@ body.solo-page {
 }
 
 #boss-board .solo-card {
-  width: clamp(88px, 6.5vw, 108px);
-  min-width: clamp(88px, 6.5vw, 108px);
+  width: clamp(108px, 7.2vw, 132px);
+  min-width: clamp(108px, 7.2vw, 132px);
 }
 
 #player-board .solo-card {
@@ -708,14 +731,75 @@ body.solo-page {
   min-width: clamp(86px, 6.2vw, 104px);
 }
 
+.solo-card.boss-asset-card {
+  border-color: rgba(255, 123, 160, 0.34);
+  background:
+    linear-gradient(180deg, rgba(46, 16, 31, 0.88) 0%, rgba(12, 15, 28, 0.94) 100%);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(255, 123, 160, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.solo-card.boss-asset-card .solo-card-art {
+  height: 52%;
+  background:
+    linear-gradient(180deg, rgba(255, 124, 164, 0.14), rgba(33, 18, 34, 0.42)),
+    #1a1d2d;
+}
+
+.solo-card.boss-asset-card .solo-card-body {
+  height: 48%;
+  gap: 0.38rem;
+  padding: 0.52rem 0.55rem 0.58rem;
+}
+
+.solo-card.boss-asset-card .solo-card-body h3 {
+  font-size: 0.84rem;
+}
+
+.solo-card.boss-asset-card .solo-card-sub {
+  font-size: 0.62rem;
+  letter-spacing: 0.03em;
+}
+
+.solo-card.boss-asset-card .state-pill {
+  border-color: rgba(255, 123, 160, 0.36);
+  background: rgba(255, 123, 160, 0.12);
+  color: #ffe2ef;
+}
+
+.solo-card.boss-asset-card .solo-card-text {
+  font-size: 0.64rem;
+  line-height: 1.2;
+}
+
+.solo-card.boss-asset-card.hidden-boss .solo-card-art {
+  height: 34%;
+}
+
+.solo-card.boss-asset-card.hidden-boss .solo-card-body {
+  height: 66%;
+  gap: 0.28rem;
+  padding: 0.44rem 0.5rem 0.52rem;
+}
+
+.solo-card.boss-asset-card.hidden-boss .solo-card-placeholder {
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+}
+
 .card-preview-overlay {
   position: relative;
   z-index: 7;
   width: 100%;
+  height: 100%;
   min-height: 0;
   padding: 0.85rem;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.65rem;
+  overflow: hidden;
   transition: opacity 160ms ease, transform 160ms ease;
 }
 
@@ -723,11 +807,6 @@ body.solo-page {
   opacity: 0;
   transform: translateY(8px);
   pointer-events: none;
-}
-
-.card-preview .solo-card {
-  width: 100%;
-  min-width: 0;
 }
 
 .preview-image-frame {
@@ -743,6 +822,14 @@ body.solo-page {
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
+.card-preview {
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
 .preview-image-frame img,
 .preview-placeholder {
   width: 100%;
@@ -752,6 +839,33 @@ body.solo-page {
 
 .preview-image-frame img {
   object-fit: cover;
+}
+
+.preview-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 8, 14, 0.72);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.preview-zoom.is-visible {
+  opacity: 1;
+}
+
+.preview-zoom img {
+  width: min(36vw, 420px);
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 20px;
+  border: 1px solid rgba(153, 210, 255, 0.28);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.58),
+    0 0 0 1px rgba(125, 236, 255, 0.16);
 }
 
 .turn-log-drawer {

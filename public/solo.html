@@ -74,13 +74,6 @@
 
     <section class="solo-board" aria-label="Solo game board">
       <section class="board-zone boss-zone">
-        <div class="zone-head">
-          <div>
-            <p class="zone-label">Boss Zone</p>
-            <h2>Security Grid</h2>
-          </div>
-          <p id="boss-meta" class="zone-meta">0 defenders online</p>
-        </div>
         <div class="boss-zone-layout">
           <div id="boss-core" class="boss-core"></div>
           <div class="card-rail zone-rail">
@@ -90,24 +83,10 @@
       </section>
 
       <section class="board-zone objective-belt">
-        <div class="zone-head compact">
-          <div>
-            <p class="zone-label">Contested District</p>
-            <h2>Objective Strip</h2>
-          </div>
-          <p id="objective-meta" class="zone-meta">3 gigs remaining</p>
-        </div>
         <div id="objective-zone" class="objective-zone"></div>
       </section>
 
       <section class="board-zone player-zone">
-        <div class="zone-head compact">
-          <div>
-            <p class="zone-label">Runner Field</p>
-            <h2>Battlefield</h2>
-          </div>
-          <p id="player-meta" class="zone-meta">0 units in play</p>
-        </div>
         <div class="card-rail zone-rail player-rail">
           <div id="player-board" class="zone-card-row"></div>
         </div>
@@ -116,13 +95,6 @@
 
     <section class="hand-stage">
       <section class="hand-tray">
-        <div class="zone-head compact">
-          <div>
-            <p class="zone-label">Runner Grip</p>
-            <h2>Hand</h2>
-          </div>
-          <p id="hand-meta" class="zone-meta">0 cards in hand</p>
-        </div>
         <div class="action-bar">
           <button id="start-btn" class="btn btn-gold" type="button">Start Run</button>
           <button id="end-phase-btn" class="btn" type="button">End Main</button>
@@ -134,6 +106,9 @@
       </section>
     </section>
   </main>
+  <div id="preview-zoom" class="preview-zoom" aria-hidden="true">
+    <img id="preview-zoom-image" alt="">
+  </div>
 
   <script src="solo.js"></script>
 </body>
