@@ -98,7 +98,11 @@
 
       <section id="player-zone" class="board-zone player-zone">
         <div class="card-rail zone-rail player-rail">
-          <div id="player-board" class="zone-card-row"></div>
+          <div class="eddie-zone-head">
+            <p class="zone-label">Player Area</p>
+            <span id="eddie-summary" class="zone-meta">0 total · 0 ready · 0 spent</span>
+          </div>
+          <div id="player-area" class="player-area"></div>
         </div>
       </section>
     </section>
@@ -108,6 +112,7 @@
         <div class="action-bar">
           <button id="start-btn" class="btn btn-gold" type="button">Start Run</button>
           <button id="play-btn" class="btn btn-gold" type="button">Play</button>
+          <button id="sell-eddie-btn" class="btn" type="button">Sell for 1 Eddie</button>
           <button id="end-phase-btn" class="btn" type="button">End Main</button>
           <button id="attack-btn" class="btn" type="button">Attack</button>
           <button id="confirm-target-btn" class="btn btn-gold" type="button">Confirm Target</button>

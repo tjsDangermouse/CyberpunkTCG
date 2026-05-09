@@ -19,6 +19,7 @@
     START_RUN: 'start-run',
     SELECT_CARD: 'select-card',
     PLAY_CARD: 'play-card',
+    SELL_FOR_EDDIE: 'sell-for-eddie',
     BEGIN_ATTACK: 'begin-attack',
     SELECT_TARGET: 'select-target',
     CONFIRM_ATTACK: 'confirm-attack',

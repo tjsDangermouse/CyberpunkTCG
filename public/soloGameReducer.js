@@ -5,8 +5,6 @@
     OBJECTIVES_TO_WIN,
     BOARD_LIMIT,
     MAX_LOG,
-    BASE_CREDITS,
-    CREDIT_CAP,
     ALERT_LOSE_AT,
     PHASES,
     STATUSES,
@@ -31,18 +29,33 @@
     state.selectedTargetId = null;
   }
 
+  function readyEddies(state) {
+    return state.eddieArea.filter(eddie => !eddie.isSpent);
+  }
+
+  function countReadyEddies(state) {
+    return readyEddies(state).length;
+  }
+
+  function canSellCard(card) {
+    if (!card) return false;
+    // TODO: Replace this prototype check with Sell Tag validation.
+    return CardUtils.getCardType(card) !== 'LEGEND';
+  }
+
   function createInitialState(cardsBySlug) {
     return {
       mode: 'pregame',
       status: STATUSES.IDLE,
       phase: PHASES.SETUP,
+      currentPhase: 'setup',
       turn: 0,
+      eddieArea: [],
+      hasSoldThisTurn: false,
       player: {
         name: '',
         source: '',
         hp: PLAYER_HP,
-        credits: BASE_CREDITS,
-        maxCredits: BASE_CREDITS,
         deck: [],
         hand: [],
         discard: [],
@@ -73,12 +86,11 @@
     next.mode = 'active';
     next.status = STATUSES.PLAYING;
     next.phase = PHASES.PLAYER_MAIN;
+    next.currentPhase = 'play';
     next.turn = 1;
     next.player.name = deckInfo.name;
     next.player.source = deckInfo.source;
     next.player.deck = CardUtils.shuffle(deckInfo.cards);
-    next.player.credits = BASE_CREDITS;
-    next.player.maxCredits = BASE_CREDITS;
 
     drawCards(next, STARTING_HAND);
     pushLog(next, 'Run Started', `${deckInfo.name} enters the district. Secure 3 gigs before Alert 10.`);
@@ -140,7 +152,37 @@
 
   function canPlayCard(state, card) {
     if (!card || state.phase !== PHASES.PLAYER_MAIN || state.status !== STATUSES.PLAYING) return false;
-    return CardUtils.getCardCost(card) <= state.player.credits;
+    if (!CardUtils.isSupportedBoardCard(card)) return false;
+    return CardUtils.getCardCost(card) <= countReadyEddies(state);
+  }
+
+  function spendEddies(state, amount) {
+    const eddiesToSpend = readyEddies(state).slice(0, Math.max(0, amount));
+    if (eddiesToSpend.length < amount) return false;
+    eddiesToSpend.forEach(eddie => {
+      eddie.isSpent = true;
+    });
+    return true;
+  }
+
+  function sellCardForEddie(state, cardId) {
+    if (state.phase !== PHASES.PLAYER_MAIN || state.status !== STATUSES.PLAYING || state.hasSoldThisTurn) return;
+    const handIndex = state.player.hand.findIndex(card => card.instanceId === cardId);
+    if (handIndex === -1) return;
+    const card = state.player.hand[handIndex];
+    if (!canSellCard(card)) return;
+
+    state.player.hand.splice(handIndex, 1);
+    state.eddieArea.push({
+      id: CardUtils.createInstanceId('eddie'),
+      originalCardId: card.instanceId,
+      originalCardName: CardUtils.getCardName(card),
+      isSpent: false,
+      createdTurn: state.turn,
+    });
+    state.hasSoldThisTurn = true;
+    clearSelections(state);
+    pushLog(state, 'Eddie Sold', `Sold ${CardUtils.getCardName(card)} for 1 Eddie.`);
   }
 
   function playCard(state, cardId) {
@@ -150,27 +192,25 @@
     if (!canPlayCard(state, card)) return;
 
     const cost = CardUtils.getCardCost(card);
-    const type = CardUtils.getCardType(card);
     state.player.hand.splice(handIndex, 1);
 
-    if (CardUtils.isSupportedBoardCard(card)) {
-      if (state.player.board.length >= BOARD_LIMIT) {
-        state.player.hand.splice(handIndex, 0, card);
-        return;
-      }
-      state.player.credits -= cost;
-      state.player.board.push(CardUtils.createBoardCard(card, 'player', {
-        ready: false,
-        exhausted: true,
-        enteredTurn: state.turn,
-        flash: 'new-card',
-      }));
-      pushLog(state, 'Deploy', `${CardUtils.getCardName(card)} enters play exhausted.`);
-    } else {
-      state.player.discard.push(CardUtils.deckCardFromInstance(card));
-      state.player.credits = Math.min(CREDIT_CAP, state.player.credits + 1);
-      pushLog(state, 'Prototype Action', `${CardUtils.getCardName(card)} was discarded for +1 credit.`);
+    if (state.player.board.length >= BOARD_LIMIT) {
+      state.player.hand.splice(handIndex, 0, card);
+      return;
     }
+
+    if (!spendEddies(state, cost)) {
+      state.player.hand.splice(handIndex, 0, card);
+      return;
+    }
+
+    state.player.board.push(CardUtils.createBoardCard(card, 'player', {
+      ready: false,
+      exhausted: true,
+      enteredTurn: state.turn,
+      flash: 'new-card',
+    }));
+    pushLog(state, 'Deploy', `${CardUtils.getCardName(card)} enters play exhausted.`);
 
     clearSelections(state);
   }
@@ -193,6 +233,7 @@
     if (securedGigCount(state) < OBJECTIVES_TO_WIN) return;
     state.status = STATUSES.WON;
     state.phase = PHASES.GAME_OVER;
+    state.currentPhase = 'over';
     state.gameOverReason = 'All required gigs have been secured.';
     pushLog(state, 'Run Complete', 'Arasaka Lockdown collapses. The district is yours.');
   }
@@ -267,6 +308,7 @@
 
   function bossTurn(state) {
     state.phase = PHASES.BOSS_TURN;
+    state.currentPhase = 'boss';
     state.boss.alert += 1;
     pushLog(state, 'Boss Turn', `Alert rises to ${state.boss.alert}.`);
     applyBossThresholds(state);
@@ -285,6 +327,7 @@
       if (state.player.hp <= 0) {
         state.status = STATUSES.LOST;
         state.phase = PHASES.GAME_OVER;
+        state.currentPhase = 'over';
         state.gameOverReason = 'Runner HP reached 0.';
         pushLog(state, 'Runner Down', 'Arasaka flatlined the run.');
       }
@@ -293,6 +336,7 @@
     if (state.status === STATUSES.PLAYING && state.boss.alert >= ALERT_LOSE_AT) {
       state.status = STATUSES.LOST;
       state.phase = PHASES.GAME_OVER;
+      state.currentPhase = 'over';
       state.gameOverReason = 'Alert 10 triggered total lockdown.';
       pushLog(state, 'Lockdown Complete', 'Alert 10 was reached at the end of the boss turn.');
     }
@@ -302,8 +346,11 @@
     if (state.status !== STATUSES.PLAYING) return;
     state.turn += 1;
     state.phase = PHASES.PLAYER_MAIN;
-    state.player.maxCredits = Math.min(CREDIT_CAP, BASE_CREDITS + state.turn - 1);
-    state.player.credits = state.player.maxCredits;
+    state.currentPhase = 'play';
+    state.hasSoldThisTurn = false;
+    state.eddieArea.forEach(eddie => {
+      eddie.isSpent = false;
+    });
     state.player.board.forEach(card => {
       card.ready = true;
       card.exhausted = false;
@@ -318,7 +365,7 @@
     });
     drawCards(state, 1);
     clearSelections(state);
-    pushLog(state, 'Refresh', `Turn ${state.turn}. Draw 1 and refresh the board.`);
+    pushLog(state, 'Refresh', `Turn ${state.turn}. Draw 1, ready your board, and refresh Eddies.`);
   }
 
   function selectCard(state, cardId) {
@@ -367,6 +414,9 @@
       case ACTIONS.PLAY_CARD:
         if (next.status === STATUSES.PLAYING) playCard(next, action.cardId || next.selectedCardId);
         break;
+      case ACTIONS.SELL_FOR_EDDIE:
+        if (next.status === STATUSES.PLAYING) sellCardForEddie(next, action.cardId || next.selectedCardId);
+        break;
       case ACTIONS.BEGIN_ATTACK:
         beginAttack(next, action.cardId || next.selectedCardId);
         break;
@@ -380,6 +430,7 @@
         if (next.phase === PHASES.PLAYER_MAIN && next.status === STATUSES.PLAYING) {
           clearSelections(next);
           next.phase = PHASES.PLAYER_ATTACK;
+          next.currentPhase = 'attack';
           pushLog(next, 'Attack Phase', 'Select a ready unit, then pick a legal target.');
         }
         break;
@@ -403,5 +454,7 @@
     legalTargetIds,
     canPlayCard,
     securedGigCount,
+    canSellCard,
+    countReadyEddies,
   };
 })();

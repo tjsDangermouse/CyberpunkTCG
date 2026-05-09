@@ -2,6 +2,7 @@ const { PHASES, STATUSES, ACTIONS, OBJECTIVES_TO_WIN } = window.SoloGameTypes;
 const CardUtils = window.SoloCardUtils;
 const Bosses = window.SoloBosses;
 const Game = window.SoloGameReducer;
+const PLAYER_AREA_PADDING = 12;
 
 let cardsBySlug = new Map();
 let state = null;
@@ -17,6 +18,11 @@ let ui = {
   gigPulseIds: new Set(),
   logOpen: false,
   alertPulse: false,
+  suppressClickId: null,
+  areaPositions: {
+    playerCards: {},
+    eddies: {},
+  },
 };
 
 const elements = {
@@ -33,7 +39,8 @@ const elements = {
   bossCore: document.getElementById('boss-core'),
   bossBoard: document.getElementById('boss-board'),
   objectiveZone: document.getElementById('objective-zone'),
-  playerBoard: document.getElementById('player-board'),
+  playerArea: document.getElementById('player-area'),
+  eddieSummary: document.getElementById('eddie-summary'),
   playerHand: document.getElementById('player-hand'),
   statusGrid: document.getElementById('status-grid'),
   turnLog: document.getElementById('turn-log'),
@@ -51,6 +58,7 @@ const elements = {
   runSummary: document.getElementById('run-summary'),
   startBtn: document.getElementById('start-btn'),
   playBtn: document.getElementById('play-btn'),
+  sellEddieBtn: document.getElementById('sell-eddie-btn'),
   endPhaseBtn: document.getElementById('end-phase-btn'),
   endTurnBtn: document.getElementById('end-turn-btn'),
   attackBtn: document.getElementById('attack-btn'),
@@ -146,6 +154,17 @@ function canPlaySelected() {
   return Boolean(selectedCard && Game.canPlayCard(state, selectedCard));
 }
 
+function canSellSelected() {
+  const selectedCard = state.player.hand.find(card => card.instanceId === state.selectedCardId);
+  return Boolean(
+    selectedCard
+    && state.phase === PHASES.PLAYER_MAIN
+    && state.status === STATUSES.PLAYING
+    && !state.hasSoldThisTurn
+    && Game.canSellCard(selectedCard)
+  );
+}
+
 function canBeginAttack(cardId) {
   if (state.phase !== PHASES.PLAYER_ATTACK || state.status !== STATUSES.PLAYING) return false;
   const card = state.player.board.find(entry => entry.instanceId === cardId);
@@ -177,14 +196,17 @@ function renderCard(card, options = {}) {
   const fanOffset = options.fanOffset ?? 0;
   const cardIdAttr = ` data-card-id="${card.instanceId}"`;
   const tabIndexAttr = ' tabindex="0"';
-  const styleAttr = ` style="--fan-offset:${fanOffset};--fan-lift:${Math.abs(fanOffset) * 2}px;--fan-layer:${100 + (options.handIndex || 0)};--fan-overlap:${Math.max(0, 42 - (options.handCount || 0) * 2)}px;"`;
+  const handStyle = `--fan-offset:${fanOffset};--fan-lift:${Math.abs(fanOffset) * 2}px;--fan-layer:${100 + (options.handIndex || 0)};--fan-overlap:${Math.max(0, 42 - (options.handCount || 0) * 2)}px;`;
+  const styleAttr = options.inlineStyle || options.hand
+    ? ` style="${options.hand ? handStyle : ''}${options.inlineStyle || ''}"`
+    : '';
 
   if (options.hand || options.artOnly) {
     return `
       <article class="${classes}"${cardIdAttr}${tabIndexAttr}${styleAttr}>
         <div class="solo-card-art hand-card-art">
           ${imgSrc
-            ? `<img src="${imgSrc}" alt="${CardUtils.getCardName(card)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder&quot;>No Art</div>'">`
+            ? `<img src="${imgSrc}" alt="${CardUtils.getCardName(card)}" loading="lazy" draggable="false" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder&quot;>No Art</div>'">`
             : `<div class="solo-card-placeholder">No Art</div>`}
         </div>
       </article>
@@ -195,7 +217,7 @@ function renderCard(card, options = {}) {
     <article class="${classes}"${cardIdAttr}${tabIndexAttr}>
       <div class="solo-card-art">
         ${imgSrc
-          ? `<img src="${imgSrc}" alt="${CardUtils.getCardName(card)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder&quot;>No Art</div>'">`
+          ? `<img src="${imgSrc}" alt="${CardUtils.getCardName(card)}" loading="lazy" draggable="false" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder&quot;>No Art</div>'">`
           : `<div class="solo-card-placeholder">${card.owner === 'boss' ? 'Boss Asset' : 'No Art'}</div>`}
         <div class="card-state-row">${renderStatePills(card)}</div>
       </div>
@@ -266,6 +288,125 @@ function renderBossCore() {
   `;
 }
 
+function approximateCardHeight(width) {
+  return width * (88 / 63);
+}
+
+function defaultEddiePosition(index) {
+  const width = 74;
+  const height = approximateCardHeight(width);
+  return {
+    x: PLAYER_AREA_PADDING + (index * 26),
+    y: Math.max(PLAYER_AREA_PADDING, 96 - (height / 2)),
+    z: 20 + index,
+  };
+}
+
+function defaultPlayerCardPosition(index, total) {
+  const width = 96;
+  const height = approximateCardHeight(width);
+  const spread = 110;
+  const centerOffset = (index - ((Math.max(total, 1) - 1) / 2)) * spread;
+  return {
+    x: 240 + centerOffset,
+    y: Math.max(PLAYER_AREA_PADDING, 112 - (height / 2)),
+    z: 120 + index,
+  };
+}
+
+function clampAreaPosition(position, bounds, width, height) {
+  const maxX = Math.max(PLAYER_AREA_PADDING, bounds.width - width - PLAYER_AREA_PADDING);
+  const maxY = Math.max(PLAYER_AREA_PADDING, bounds.height - height - PLAYER_AREA_PADDING);
+  return {
+    x: Math.min(Math.max(PLAYER_AREA_PADDING, position.x), maxX),
+    y: Math.min(Math.max(PLAYER_AREA_PADDING, position.y), maxY),
+    z: position.z,
+  };
+}
+
+function playerAreaBounds() {
+  return {
+    width: elements.playerArea?.clientWidth || 560,
+    height: elements.playerArea?.clientHeight || 220,
+  };
+}
+
+function syncPlayerAreaPositions() {
+  const bounds = playerAreaBounds();
+  const nextPlayerCards = {};
+  const nextEddies = {};
+
+  state.eddieArea.forEach((eddie, index) => {
+    const width = 74;
+    const height = approximateCardHeight(width);
+    const existing = ui.areaPositions.eddies[eddie.id] || defaultEddiePosition(index);
+    nextEddies[eddie.id] = clampAreaPosition(existing, bounds, width, height);
+  });
+
+  state.player.board.forEach((card, index) => {
+    const width = 96;
+    const height = approximateCardHeight(width);
+    const existing = ui.areaPositions.playerCards[card.instanceId] || defaultPlayerCardPosition(index, state.player.board.length);
+    nextPlayerCards[card.instanceId] = clampAreaPosition(existing, bounds, width, height);
+  });
+
+  ui.areaPositions = {
+    playerCards: nextPlayerCards,
+    eddies: nextEddies,
+  };
+}
+
+function areaCardStyle(position, width, extra = '') {
+  return `left:${position.x}px;top:${position.y}px;z-index:${position.z};width:${width}px;min-width:${width}px;${extra}`;
+}
+
+function renderEddieCard(eddie, position) {
+  return `
+    <article
+      class="solo-card eddie-card area-card ${eddie.isSpent ? 'eddie-spent' : 'eddie-ready'}"
+      data-eddie-id="${eddie.id}"
+      tabindex="-1"
+      aria-label="Face-down Eddie"
+      style="${areaCardStyle(position, 74)}"
+    >
+      <div class="eddie-card-back">
+        <div class="eddie-card-mark">EDDIE</div>
+      </div>
+    </article>
+  `;
+}
+
+function renderPlayerArea() {
+  const total = state.eddieArea.length;
+  const available = Game.countReadyEddies(state);
+  const spent = total - available;
+  elements.eddieSummary.textContent = `${total} total · ${available} ready · ${spent} spent`;
+  syncPlayerAreaPositions();
+
+  if (total === 0 && state.player.board.length === 0) {
+    elements.playerArea.innerHTML = '<div class="empty-zone player-area-empty">Sell a hand card for an Eddie or drag a playable card in from hand.</div>';
+    return;
+  }
+
+  const eddieMarkup = state.eddieArea.map(eddie => renderEddieCard(eddie, ui.areaPositions.eddies[eddie.id])).join('');
+  const boardMarkup = state.player.board.map((card, index) => renderCard(card, {
+    artOnly: true,
+    selected: cardIsSelected(card.instanceId),
+    targetable: legalTargetIds().includes(card.instanceId),
+    canAttack: canBeginAttack(card.instanceId),
+    entering: ui.enteringCardIds.has(card.instanceId),
+    inlineStyle: areaCardStyle(
+      ui.areaPositions.playerCards[card.instanceId],
+      96,
+      `height:${approximateCardHeight(96)}px;`
+    ),
+    handIndex: index,
+    handCount: state.player.board.length,
+  }).replace('class="solo-card', 'class="solo-card area-card player-area-card')).join('');
+
+  elements.playerArea.innerHTML = `${eddieMarkup}${boardMarkup}`;
+}
+
 function renderObjectives() {
   const legalGigs = new Set(legalTargetIds());
   elements.objectiveZone.innerHTML = state.gigs.map((gig, index) => `
@@ -294,7 +435,9 @@ function renderStatus() {
 
   elements.statusGrid.innerHTML = `
     <div class="status-item"><span>Runner HP</span><strong>${state.player.hp}</strong></div>
-    <div class="status-item"><span>Credits</span><strong>${state.player.credits}</strong></div>
+    <div class="status-item"><span>Total Eddies</span><strong>${state.eddieArea.length}</strong></div>
+    <div class="status-item"><span>Available Eddies</span><strong>${Game.countReadyEddies(state)}</strong></div>
+    <div class="status-item"><span>Spent Eddies</span><strong>${state.eddieArea.length - Game.countReadyEddies(state)}</strong></div>
     <div class="status-item"><span>Turn</span><strong>${state.turn}</strong></div>
     <div class="status-item"><span>Alert</span><strong>${state.boss.alert}</strong></div>
     <div class="status-item"><span>Deck</span><strong>${state.player.deck.length}</strong></div>
@@ -427,6 +570,16 @@ function applyAdaptiveSizing() {
   }
 }
 
+function raiseAreaItem(itemType, id) {
+  const collection = itemType === 'eddie' ? ui.areaPositions.eddies : ui.areaPositions.playerCards;
+  const maxZ = Math.max(
+    0,
+    ...Object.values(ui.areaPositions.eddies).map(position => Number(position.z) || 0),
+    ...Object.values(ui.areaPositions.playerCards).map(position => Number(position.z) || 0),
+  );
+  if (collection[id]) collection[id].z = maxZ + 1;
+}
+
 function wirePreviewZoom() {
   const frame = elements.cardPreview.querySelector('.preview-image-frame');
   const img = frame ? frame.querySelector('img') : null;
@@ -458,7 +611,7 @@ function renderPreview() {
   elements.cardPreview.innerHTML = `
     <div class="preview-image-frame">
       ${imgSrc
-        ? `<img src="${imgSrc}" alt="${CardUtils.getCardName(preview)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder preview-placeholder&quot;>No Art</div>'">`
+        ? `<img src="${imgSrc}" alt="${CardUtils.getCardName(preview)}" loading="lazy" draggable="false" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder preview-placeholder&quot;>No Art</div>'">`
         : '<div class="solo-card-placeholder preview-placeholder">No Art</div>'}
     </div>
   `;
@@ -488,7 +641,7 @@ function renderMeta() {
       ? 'Defenders are up. Pick a ready unit and attack through the board first.'
       : 'No defenders remain. A clean hit secures an open gig.';
   } else {
-    elements.runSummary.textContent = 'Play units, patch unsupported cards into credits, and manage Alert before the boss turn.';
+    elements.runSummary.textContent = 'Sell one hand card for an Eddie during Play, spend ready Eddies to deploy units, and manage Alert before the boss turn.';
   }
 
   Object.values(elements.phaseChips).forEach(chip => chip.classList.remove('active'));
@@ -523,26 +676,30 @@ function deriveNextMove() {
 
   if (state.phase === PHASES.PLAYER_MAIN) {
     const playableSelected = state.player.hand.find(card => card.instanceId === state.selectedCardId && Game.canPlayCard(state, card));
-    const affordableBoardCard = state.player.hand.find(card => Game.canPlayCard(state, card) && CardUtils.isSupportedBoardCard(card));
-    const unsupportedAffordable = state.player.hand.find(card => Game.canPlayCard(state, card) && !CardUtils.isSupportedBoardCard(card));
+    const sellableSelected = state.player.hand.find(card => card.instanceId === state.selectedCardId && Game.canSellCard(card) && !state.hasSoldThisTurn);
+    const affordableBoardCard = state.player.hand.find(card => Game.canPlayCard(state, card));
+    const sellableCard = state.player.hand.find(card => Game.canSellCard(card) && !state.hasSoldThisTurn);
 
     if (playableSelected) {
-      if (CardUtils.isSupportedBoardCard(playableSelected)) {
-        return {
-          title: 'Play selected card',
-          text: `Press Play to deploy ${CardUtils.getCardName(playableSelected)} onto your board exhausted.`,
-        };
-      }
       return {
-        title: 'Convert selected card',
-        text: `Press Play to discard ${CardUtils.getCardName(playableSelected)} for +1 credit in the prototype rules.`,
+        title: 'Play selected card',
+        text: `Press Play to spend ${CardUtils.getCardCost(playableSelected)} Eddie and deploy ${CardUtils.getCardName(playableSelected)} exhausted.`,
       };
     }
 
-    if (affordableBoardCard || unsupportedAffordable) {
+    if (sellableSelected) {
+      return {
+        title: 'Sell selected card',
+        text: `Press Sell for 1 Eddie to move ${CardUtils.getCardName(sellableSelected)} into the Eddie Area face-down.`,
+      };
+    }
+
+    if (affordableBoardCard || sellableCard) {
       return {
         title: 'Choose a hand card',
-        text: 'Click a card in your hand, then press Play. Units and Legends enter the board. Other cards convert into +1 credit for now.',
+        text: state.hasSoldThisTurn
+          ? 'Click a card in your hand, then press Play if you have enough ready Eddies to cover its cost.'
+          : 'Click a card in your hand, then either Play it by spending ready Eddies or Sell it for 1 Eddie.',
       };
     }
 
@@ -620,6 +777,7 @@ function renderControls() {
 
   elements.startBtn.disabled = state.mode !== 'pregame';
   elements.playBtn.disabled = !canPlaySelected();
+  elements.sellEddieBtn.disabled = !canSellSelected();
   elements.endPhaseBtn.disabled = !(state.phase === PHASES.PLAYER_MAIN && state.status === STATUSES.PLAYING);
   elements.endTurnBtn.disabled = !(state.phase === PHASES.PLAYER_ATTACK && state.status === STATUSES.PLAYING);
   elements.attackBtn.disabled = !(selectedBoardCard && canBeginAttack(selectedBoardCard.instanceId));
@@ -684,8 +842,8 @@ function applyHoverSpread(cardId) {
 }
 
 function updateDropHighlight(pointerX, pointerY) {
-  if (!elements.playerRail) return false;
-  const zone = elements.playerZone.getBoundingClientRect();
+  if (!elements.playerArea) return false;
+  const zone = elements.playerArea.getBoundingClientRect();
   const legal = (
     state.phase === PHASES.PLAYER_MAIN
     && state.status === STATUSES.PLAYING
@@ -766,6 +924,63 @@ function dispatch(action) {
   render();
 }
 
+function beginPlayerAreaDrag(node, itemType, id, event) {
+  if (event.button !== 0 || !elements.playerArea) return;
+
+  const areaRect = elements.playerArea.getBoundingClientRect();
+  const nodeRect = node.getBoundingClientRect();
+  const key = itemType === 'eddie' ? 'eddies' : 'playerCards';
+  const entry = ui.areaPositions[key][id];
+  if (!entry) return;
+
+  let dragged = false;
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const width = nodeRect.width;
+  const height = nodeRect.height;
+  raiseAreaItem(itemType, id);
+
+  node.setPointerCapture(event.pointerId);
+
+  const move = moveEvent => {
+    const deltaX = moveEvent.clientX - startX;
+    const deltaY = moveEvent.clientY - startY;
+    if (!dragged && Math.hypot(deltaX, deltaY) > 4) {
+      dragged = true;
+      node.classList.add('dragging-in-area');
+    }
+    if (!dragged) return;
+
+    const nextPosition = clampAreaPosition({
+      x: moveEvent.clientX - areaRect.left - (width / 2),
+      y: moveEvent.clientY - areaRect.top - (height / 2),
+      z: entry.z,
+    }, { width: areaRect.width, height: areaRect.height }, width, height);
+    ui.areaPositions[key][id] = nextPosition;
+    node.style.left = `${nextPosition.x}px`;
+    node.style.top = `${nextPosition.y}px`;
+    node.style.zIndex = `${nextPosition.z}`;
+  };
+
+  const finish = () => {
+    node.classList.remove('dragging-in-area');
+    if (node.hasPointerCapture(event.pointerId)) node.releasePointerCapture(event.pointerId);
+    if (dragged) {
+      ui.suppressClickId = `${itemType}:${id}`;
+      window.setTimeout(() => {
+        if (ui.suppressClickId === `${itemType}:${id}`) ui.suppressClickId = null;
+      }, 0);
+    }
+    node.onpointermove = null;
+    node.onpointerup = null;
+    node.onpointercancel = null;
+  };
+
+  node.onpointermove = move;
+  node.onpointerup = finish;
+  node.onpointercancel = finish;
+}
+
 function attachInteractions() {
   document.querySelectorAll('[data-card-id]').forEach(node => {
     node.onmouseenter = () => {
@@ -791,6 +1006,10 @@ function attachInteractions() {
 
     node.onclick = () => {
       const cardId = node.dataset.cardId;
+      if (ui.suppressClickId === `card:${cardId}`) {
+        ui.suppressClickId = null;
+        return;
+      }
       const handCard = state.player.hand.find(card => card.instanceId === cardId);
       if (handCard) {
         dispatch({ type: ACTIONS.SELECT_CARD, cardId });
@@ -811,6 +1030,10 @@ function attachInteractions() {
 
       dispatch({ type: ACTIONS.SELECT_CARD, cardId });
     };
+
+    if (node.closest('#player-area')) {
+      node.onpointerdown = event => beginPlayerAreaDrag(node, 'card', node.dataset.cardId, event);
+    }
 
     if (node.closest('#player-hand')) {
       node.onpointerdown = event => {
@@ -867,6 +1090,16 @@ function attachInteractions() {
     }
   });
 
+  document.querySelectorAll('[data-eddie-id]').forEach(node => {
+    node.onpointerdown = event => beginPlayerAreaDrag(node, 'eddie', node.dataset.eddieId, event);
+    node.onclick = () => {
+      const eddieId = node.dataset.eddieId;
+      if (ui.suppressClickId === `eddie:${eddieId}`) {
+        ui.suppressClickId = null;
+      }
+    };
+  });
+
   document.querySelectorAll('[data-gig-id]').forEach(node => {
     node.onmouseenter = () => {
       const gigId = node.dataset.gigId;
@@ -898,8 +1131,8 @@ function render() {
   renderMeta();
   renderBossCore();
   renderObjectives();
+  renderPlayerArea();
   renderZoneCards(elements.bossBoard, state.boss.board, { emptyText: 'No defenders online.' });
-  renderZoneCards(elements.playerBoard, state.player.board, { artOnly: true, emptyText: 'Deploy units here from your hand.' });
   renderZoneCards(elements.playerHand, state.player.hand, { hand: true, emptyText: 'No cards in hand.' });
   renderStatus();
   renderControls();
@@ -915,6 +1148,7 @@ function render() {
 function wireControls() {
   elements.startBtn.onclick = () => dispatch({ type: ACTIONS.START_RUN });
   elements.playBtn.onclick = () => dispatch({ type: ACTIONS.PLAY_CARD, cardId: state.selectedCardId });
+  elements.sellEddieBtn.onclick = () => dispatch({ type: ACTIONS.SELL_FOR_EDDIE, cardId: state.selectedCardId });
   elements.endPhaseBtn.onclick = () => dispatch({ type: ACTIONS.END_PHASE });
   elements.attackBtn.onclick = () => dispatch({ type: ACTIONS.BEGIN_ATTACK, cardId: state.selectedCardId });
   elements.confirmTargetBtn.onclick = () => dispatch({ type: ACTIONS.CONFIRM_ATTACK });
@@ -931,9 +1165,7 @@ function wireControls() {
   };
   window.onresize = () => {
     hidePreviewZoom();
-    fitPreviewHeaderTitle();
-    applyAdaptiveSizing();
-    updateInteractionLine();
+    render();
   };
 }
 
