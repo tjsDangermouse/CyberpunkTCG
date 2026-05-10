@@ -21,7 +21,7 @@
         <div class="hud-cluster">
           <p class="zone-label">Objectives</p>
           <div class="metric-line">
-            <span>Secured</span>
+            <span>Secured Gigs</span>
             <strong id="objective-progress">0 / 3</strong>
           </div>
           <p id="run-summary" class="run-summary">Use your saved deck or the fallback runner stack.</p>
@@ -113,6 +113,9 @@
           <button id="start-btn" class="btn btn-gold" type="button">Start Run</button>
           <button id="play-btn" class="btn btn-gold" type="button">Play</button>
           <button id="sell-eddie-btn" class="btn" type="button">Sell for 1 Eddie</button>
+          <button id="secure-gig-btn" class="btn btn-gold" type="button" hidden>Secure Selected Gig</button>
+          <button id="spawn-firewall-btn" class="btn" type="button" hidden>Spawn Firewall Drone</button>
+          <button id="spawn-enforcer-btn" class="btn" type="button" hidden>Spawn Lockdown Enforcer</button>
           <button id="end-phase-btn" class="btn" type="button">End Main</button>
           <button id="attack-btn" class="btn" type="button">Attack</button>
           <button id="confirm-target-btn" class="btn btn-gold" type="button">Confirm Target</button>
@@ -128,7 +131,7 @@
   <aside id="next-move-popup" class="next-move-popup" aria-live="polite">
     <p class="zone-label">Next Move</p>
     <h2 id="next-move-title">Start the run</h2>
-    <p id="next-move-text" class="run-summary">Press Start Run to shuffle your deck, draw five cards, and begin the encounter.</p>
+    <p id="next-move-text" class="run-summary">Press Start Run to shuffle your deck, draw six cards, and begin the encounter.</p>
   </aside>
   <div id="game-over-overlay" class="game-over-overlay is-hidden" aria-hidden="true">
     <div class="game-over-card">

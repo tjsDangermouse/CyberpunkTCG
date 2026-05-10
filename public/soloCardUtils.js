@@ -14,6 +14,7 @@
     delete clone.ready;
     delete clone.exhausted;
     delete clone.enteredTurn;
+    delete clone.spawnedThisTurn;
     delete clone.flash;
     delete clone.powerModifier;
     delete clone.data;
@@ -112,6 +113,7 @@
       ready: overrides.ready ?? false,
       exhausted: overrides.exhausted ?? !overrides.ready,
       enteredTurn: overrides.enteredTurn ?? 0,
+      spawnedThisTurn: overrides.spawnedThisTurn ?? false,
       flash: overrides.flash || '',
       powerModifier: overrides.powerModifier || 0,
     };

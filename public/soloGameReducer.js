@@ -13,6 +13,13 @@
 
   const Bosses = window.SoloBosses;
   const CardUtils = window.SoloCardUtils;
+  const ALERT_SPAWN_RULES = {
+    1: ['firewallDrone'],
+    3: ['firewallDrone'],
+    5: ['lockdownEnforcer'],
+    7: ['firewallDrone', 'lockdownEnforcer'],
+    9: ['lockdownEnforcer'],
+  };
 
   function pushLog(state, title, text) {
     state.log.unshift({
@@ -27,6 +34,25 @@
     state.selectedCardId = null;
     state.selectedAttackerId = null;
     state.selectedTargetId = null;
+    state.selectedGigId = null;
+  }
+
+  function clearBoardFlashes(state) {
+    state.player.board.forEach(card => {
+      card.flash = '';
+    });
+    state.boss.board.forEach(card => {
+      card.flash = '';
+    });
+  }
+
+  function recordCombat(state, attackerId, targetId) {
+    state.combatCounter = Number(state.combatCounter || 0) + 1;
+    state.lastCombat = {
+      seq: state.combatCounter,
+      attackerId,
+      targetId,
+    };
   }
 
   function readyEddies(state) {
@@ -67,14 +93,15 @@
         alert: 0,
         board: [],
         lockdownActive: false,
-        spawnedAt3: false,
-        spawnedAt6: false,
-        activatedAt9: false,
       },
       gigs: Bosses.createContestedGigs(),
       selectedCardId: null,
       selectedAttackerId: null,
       selectedTargetId: null,
+      selectedGigId: null,
+      combatCounter: 0,
+      lastCombat: null,
+      gameResult: '',
       gameOverReason: '',
       log: [],
     };
@@ -137,16 +164,20 @@
   }
 
   function securedGigCount(state) {
-    return state.gigs.filter(gig => gig.claimedBy === 'player').length;
+    return state.gigs.filter(gig => gig.isSecured).length;
   }
 
   function openGigTargets(state) {
-    return state.gigs.filter(gig => !gig.claimedBy).map(gig => gig.id);
+    return state.gigs.filter(gig => !gig.isSecured).map(gig => gig.id);
+  }
+
+  function bossHasActiveDefenders(state) {
+    return state.boss.board.length > 0;
   }
 
   function legalTargetIds(state) {
     if (state.phase !== PHASES.PLAYER_ATTACK || !state.selectedAttackerId) return [];
-    if (state.boss.board.length > 0) return state.boss.board.map(card => card.instanceId);
+    if (bossHasActiveDefenders(state)) return state.boss.board.map(card => card.instanceId);
     return openGigTargets(state);
   }
 
@@ -215,10 +246,29 @@
     clearSelections(state);
   }
 
+  function canAttackWithUnit(state, attacker) {
+    return Boolean(
+      attacker
+      && attacker.ready
+      && attacker.currentHp > 0
+      && attacker.enteredTurn < state.turn
+    );
+  }
+
   function beginAttack(state, attackerId) {
-    if (state.phase !== PHASES.PLAYER_ATTACK || state.status !== STATUSES.PLAYING) return;
+    if (state.phase !== PHASES.PLAYER_ATTACK || state.status !== STATUSES.PLAYING) {
+      pushLog(state, 'Invalid Attack', 'Attack attempts are only valid during the Attack Phase.');
+      return;
+    }
     const attacker = state.player.board.find(card => card.instanceId === attackerId);
-    if (!attacker || !attacker.ready) return;
+    if (!attacker) {
+      pushLog(state, 'Invalid Attack', 'Selected attacker is no longer on the field.');
+      return;
+    }
+    if (!canAttackWithUnit(state, attacker)) {
+      pushLog(state, 'Invalid Attack', `${CardUtils.getCardName(attacker)} cannot attack an open Gig right now.`);
+      return;
+    }
     state.selectedAttackerId = attackerId;
     state.selectedCardId = attackerId;
     state.selectedTargetId = null;
@@ -229,117 +279,224 @@
     discardBoardCard(state, removed);
   }
 
+  function spawnBossDefender(state, templateKey) {
+    const template = state.boss.templates[templateKey];
+    if (!template) return false;
+    const instance = CardUtils.createBoardCard(template, 'boss', {
+      ready: true,
+      exhausted: false,
+      enteredTurn: state.turn,
+      spawnedThisTurn: true,
+      flash: 'new-card',
+    });
+    state.boss.board.push(instance);
+    pushLog(state, 'Arasaka Deploys', `Arasaka deployed ${CardUtils.getCardName(template)}.`);
+    return true;
+  }
+
+  function isSpentPlayerUnit(card) {
+    return Boolean(card && card.currentHp > 0 && card.ready === false);
+  }
+
+  function eligibleBossAttackers(state) {
+    return state.boss.board.filter(card => (
+      card
+      && card.currentHp > 0
+      && card.ready
+      && !card.spawnedThisTurn
+    ));
+  }
+
+  function chooseBossTarget(state) {
+    const spentUnits = state.player.board.filter(isSpentPlayerUnit);
+    if (spentUnits.length === 0) return null;
+
+    return spentUnits
+      .slice()
+      .sort((left, right) => {
+        const powerGap = CardUtils.getCardPower(right) - CardUtils.getCardPower(left);
+        if (powerGap !== 0) return powerGap;
+        const turnGap = (left.enteredTurn ?? 0) - (right.enteredTurn ?? 0);
+        if (turnGap !== 0) return turnGap;
+        return state.player.board.findIndex(card => card.instanceId === left.instanceId)
+          - state.player.board.findIndex(card => card.instanceId === right.instanceId);
+      })[0];
+  }
+
+  function resolveBossAttack(state, attacker, target) {
+    if (!attacker || !target) return;
+
+    const attackPower = Math.max(1, CardUtils.getCardPower(attacker));
+    const defendPower = Math.max(1, CardUtils.getCardPower(target));
+    recordCombat(state, attacker.instanceId, target.instanceId);
+    attacker.ready = false;
+    attacker.exhausted = true;
+    attacker.flash = 'blocked-card';
+    target.flash = 'hit-card';
+
+    pushLog(state, 'Boss Attack', `${CardUtils.getCardName(attacker)} attacked ${CardUtils.getCardName(target)}.`);
+
+    target.currentHp -= attackPower;
+    attacker.currentHp -= defendPower;
+    pushLog(state, 'Damage Dealt', `${CardUtils.getCardName(attacker)} deals ${attackPower} to ${CardUtils.getCardName(target)}. ${CardUtils.getCardName(target)} deals ${defendPower} back.`);
+
+    if (target.currentHp <= 0) {
+      pushLog(state, 'Unit Defeated', `${CardUtils.getCardName(target)} was defeated.`);
+      markDefeat(state, target, state.player.board);
+    }
+    if (attacker.currentHp <= 0) {
+      pushLog(state, 'Defender Defeated', `${CardUtils.getCardName(attacker)} was defeated.`);
+      removeBoardCard(state.boss.board, attacker.instanceId);
+    }
+  }
+
+  function resolveBossAttackPhase(state) {
+    pushLog(state, 'Boss Attack', 'Arasaka attack phase started.');
+
+    if (!chooseBossTarget(state)) {
+      pushLog(state, 'Boss Attack', 'Arasaka found no exposed targets.');
+      return;
+    }
+
+    const attackers = eligibleBossAttackers(state);
+    if (attackers.length === 0) return;
+
+    let foundTarget = false;
+    attackers.forEach(attacker => {
+      const liveAttacker = state.boss.board.find(card => card.instanceId === attacker.instanceId);
+      if (!liveAttacker || !liveAttacker.ready || liveAttacker.spawnedThisTurn || liveAttacker.currentHp <= 0) return;
+
+      const target = chooseBossTarget(state);
+      if (!target) return;
+      foundTarget = true;
+      clearBoardFlashes(state);
+      resolveBossAttack(state, liveAttacker, target);
+    });
+
+    if (!foundTarget) {
+      pushLog(state, 'Boss Attack', 'Arasaka found no exposed targets.');
+    }
+  }
+
+  function resolveAlertSpawns(state) {
+    const spawnQueue = [];
+    const specificRule = ALERT_SPAWN_RULES[state.boss.alert] || [];
+
+    if (state.boss.alert === 1 && state.boss.board.length === 0) {
+      spawnQueue.push('firewallDrone');
+    } else {
+      spawnQueue.push(...specificRule);
+    }
+
+    spawnQueue.forEach(templateKey => {
+      spawnBossDefender(state, templateKey);
+    });
+
+    if (state.boss.alert === 9 && !state.boss.lockdownActive) {
+      state.boss.lockdownActive = true;
+      pushLog(state, 'Lockdown Protocol', 'LOCKDOWN PROTOCOL ACTIVE.');
+    }
+
+    if (state.boss.board.length === 0) {
+      spawnBossDefender(state, 'firewallDrone');
+    }
+  }
+
+  function checkAlertLoss(state) {
+    if (state.status !== STATUSES.PLAYING || state.boss.alert < ALERT_LOSE_AT) return;
+    state.status = STATUSES.LOST;
+    state.phase = PHASES.GAME_OVER;
+    state.currentPhase = 'over';
+    state.gameOverReason = 'Alert 10 triggered total lockdown.';
+    pushLog(state, 'Alert 10', 'Alert reached 10. The run is lost.');
+  }
+
   function winIfEnoughGigs(state) {
     if (securedGigCount(state) < OBJECTIVES_TO_WIN) return;
     state.status = STATUSES.WON;
     state.phase = PHASES.GAME_OVER;
     state.currentPhase = 'over';
-    state.gameOverReason = 'All required gigs have been secured.';
-    pushLog(state, 'Run Complete', 'Arasaka Lockdown collapses. The district is yours.');
+    state.gameResult = 'win';
+    state.gameOverReason = 'Run complete. You escaped with the Gigs.';
+    pushLog(state, 'Run Complete', 'Run complete. You escaped with the Gigs.');
+  }
+
+  function secureGig(state, gigId, logText) {
+    if (state.status !== STATUSES.PLAYING) return;
+    const gig = state.gigs.find(entry => entry.id === gigId && !entry.isSecured);
+    if (!gig) return;
+    gig.isSecured = true;
+    gig.securedTurn = state.turn;
+    gig.flash = 'secured';
+    pushLog(state, 'Gig Secured', logText || `Secured Gig: ${gig.name}.`);
+    winIfEnoughGigs(state);
   }
 
   function resolveAttack(state, targetId) {
     const attacker = state.player.board.find(card => card.instanceId === state.selectedAttackerId);
-    if (!attacker || !attacker.ready) return;
+    if (!canAttackWithUnit(state, attacker)) {
+      pushLog(state, 'Invalid Attack', 'Selected Unit is not eligible to attack an open Gig.');
+      clearSelections(state);
+      return;
+    }
 
-    const defenderIds = state.boss.board.map(card => card.instanceId);
-    const hasDefenders = defenderIds.length > 0;
-    attacker.ready = false;
-    attacker.exhausted = true;
-    attacker.flash = 'hit-card';
+    pushLog(state, 'Attack Declared', `${CardUtils.getCardName(attacker)} attacks ${CardUtils.getCardName(findBoardCard(state, targetId) || state.gigs.find(entry => entry.id === targetId) || { name: 'target' })}.`);
 
-    if (hasDefenders) {
+    if (bossHasActiveDefenders(state)) {
       const defender = state.boss.board.find(card => card.instanceId === targetId);
-      if (!defender) return;
+      if (!defender) {
+        pushLog(state, 'Invalid Attack', 'Defenders block access to the Gig.');
+        clearSelections(state);
+        return;
+      }
+
       const attackPower = Math.max(1, CardUtils.getCardPower(attacker));
       const defendPower = Math.max(1, CardUtils.getCardPower(defender));
+      recordCombat(state, attacker.instanceId, defender.instanceId);
+      attacker.ready = false;
+      attacker.exhausted = true;
+      attacker.flash = 'hit-card';
       defender.currentHp -= attackPower;
       attacker.currentHp -= defendPower;
       defender.flash = 'hit-card';
-      pushLog(state, 'Attack', `${CardUtils.getCardName(attacker)} hits ${CardUtils.getCardName(defender)} (${attackPower} vs ${defendPower}).`);
+      pushLog(state, 'Damage Dealt', `${CardUtils.getCardName(attacker)} deals ${attackPower} to ${CardUtils.getCardName(defender)}. ${CardUtils.getCardName(defender)} deals ${defendPower} back.`);
 
       if (defender.currentHp <= 0) {
-        pushLog(state, 'Defeated', `${CardUtils.getCardName(defender)} was removed from the defense grid.`);
-        markDefeat(state, defender, state.boss.board);
+        pushLog(state, 'Defender Defeated', `${CardUtils.getCardName(defender)} was removed from the Boss Field.`);
+        removeBoardCard(state.boss.board, defender.instanceId);
       }
       if (attacker.currentHp <= 0) {
-        pushLog(state, 'Defeated', `${CardUtils.getCardName(attacker)} was lost in the exchange.`);
+        pushLog(state, 'Unit Defeated', `${CardUtils.getCardName(attacker)} was defeated and moved to discard.`);
         markDefeat(state, attacker, state.player.board);
       }
-    } else {
-      const gig = state.gigs.find(entry => entry.id === targetId && !entry.claimedBy);
-      if (!gig) return;
-      gig.claimedBy = 'player';
-      gig.flash = 'secured';
-      pushLog(state, 'Gig Secured', `${CardUtils.getCardName(attacker)} breaches the district and secures ${gig.name}.`);
-      winIfEnoughGigs(state);
+
+      clearSelections(state);
+      return;
     }
+
+    const gig = state.gigs.find(entry => entry.id === targetId && !entry.isSecured);
+    if (!gig) {
+      pushLog(state, 'Invalid Attack', 'Selected Gig is no longer a valid open objective.');
+      clearSelections(state);
+      return;
+    }
+
+    attacker.ready = false;
+    attacker.exhausted = true;
+    attacker.flash = 'hit-card';
+    secureGig(state, gig.id, `${CardUtils.getCardName(attacker)} secured ${gig.name}.`);
 
     clearSelections(state);
-  }
-
-  function spawnBossCard(state, template, title) {
-    if (state.boss.board.length >= BOARD_LIMIT) return;
-    const instance = CardUtils.createBoardCard(template, 'boss', {
-      ready: false,
-      exhausted: false,
-      enteredTurn: state.turn,
-      flash: 'new-card',
-    });
-    state.boss.board.push(instance);
-    pushLog(state, title, `${CardUtils.getCardName(template)} deploys to the defense grid.`);
-  }
-
-  function applyBossThresholds(state) {
-    if (state.boss.alert >= 3 && !state.boss.spawnedAt3) {
-      spawnBossCard(state, state.boss.templates.firewallDrone, 'Alert 3');
-      state.boss.spawnedAt3 = true;
-    }
-    if (state.boss.alert >= 6 && !state.boss.spawnedAt6) {
-      spawnBossCard(state, state.boss.templates.lockdownEnforcer, 'Alert 6');
-      state.boss.spawnedAt6 = true;
-    }
-    if (state.boss.alert >= 9 && !state.boss.activatedAt9) {
-      state.boss.lockdownActive = true;
-      state.boss.activatedAt9 = true;
-      pushLog(state, 'Alert 9', 'Lockdown is active. The district is fully hardened.');
-    }
   }
 
   function bossTurn(state) {
     state.phase = PHASES.BOSS_TURN;
     state.currentPhase = 'boss';
     state.boss.alert += 1;
-    pushLog(state, 'Boss Turn', `Alert rises to ${state.boss.alert}.`);
-    applyBossThresholds(state);
-
-    if (state.boss.board.length === 0) {
-      spawnBossCard(state, state.boss.templates.firewallDrone, 'Boss Priority');
-    }
-
-    state.boss.board.forEach(card => {
-      const newlySpawnedThisTurn = card.enteredTurn === state.turn;
-      if (newlySpawnedThisTurn || state.status !== STATUSES.PLAYING) return;
-      const damage = Math.max(1, CardUtils.getCardPower(card));
-      state.player.hp -= damage;
-      card.flash = 'hit-card';
-      pushLog(state, 'Boss Attack', `${CardUtils.getCardName(card)} hits the runner for ${damage}.`);
-      if (state.player.hp <= 0) {
-        state.status = STATUSES.LOST;
-        state.phase = PHASES.GAME_OVER;
-        state.currentPhase = 'over';
-        state.gameOverReason = 'Runner HP reached 0.';
-        pushLog(state, 'Runner Down', 'Arasaka flatlined the run.');
-      }
-    });
-
-    if (state.status === STATUSES.PLAYING && state.boss.alert >= ALERT_LOSE_AT) {
-      state.status = STATUSES.LOST;
-      state.phase = PHASES.GAME_OVER;
-      state.currentPhase = 'over';
-      state.gameOverReason = 'Alert 10 triggered total lockdown.';
-      pushLog(state, 'Lockdown Complete', 'Alert 10 was reached at the end of the boss turn.');
-    }
+    pushLog(state, 'Boss Turn', `Alert increased to ${state.boss.alert}.`);
+    resolveAlertSpawns(state);
+    resolveBossAttackPhase(state);
+    checkAlertLoss(state);
   }
 
   function refreshTurn(state) {
@@ -354,10 +511,13 @@
     state.player.board.forEach(card => {
       card.ready = true;
       card.exhausted = false;
+      card.spawnedThisTurn = false;
       card.flash = '';
     });
     state.boss.board.forEach(card => {
       card.ready = true;
+      card.exhausted = false;
+      card.spawnedThisTurn = false;
       card.flash = '';
     });
     state.gigs.forEach(gig => {
@@ -368,10 +528,61 @@
     pushLog(state, 'Refresh', `Turn ${state.turn}. Draw 1, ready your board, and refresh Eddies.`);
   }
 
+  function buildBossTurnSequence(currentState) {
+    if (!currentState || currentState.phase !== PHASES.PLAYER_ATTACK || currentState.status !== STATUSES.PLAYING) {
+      return [];
+    }
+
+    const sequence = [];
+    const next = cloneState(currentState);
+    clearSelections(next);
+    clearBoardFlashes(next);
+    next.phase = PHASES.BOSS_TURN;
+    next.currentPhase = 'boss';
+    next.boss.alert += 1;
+    pushLog(next, 'Boss Turn', `Alert increased to ${next.boss.alert}.`);
+    sequence.push({ kind: 'alert', state: cloneState(next) });
+
+    resolveAlertSpawns(next);
+    sequence.push({ kind: 'spawn', state: cloneState(next) });
+
+    pushLog(next, 'Boss Attack', 'Arasaka attack phase started.');
+    sequence.push({ kind: 'attack-start', state: cloneState(next) });
+
+    const attackers = eligibleBossAttackers(next);
+    let foundTarget = false;
+    attackers.forEach(attacker => {
+      const liveAttacker = next.boss.board.find(card => card.instanceId === attacker.instanceId);
+      if (!liveAttacker || !liveAttacker.ready || liveAttacker.spawnedThisTurn || liveAttacker.currentHp <= 0) return;
+      const target = chooseBossTarget(next);
+      if (!target) return;
+      foundTarget = true;
+      clearBoardFlashes(next);
+      resolveBossAttack(next, liveAttacker, target);
+      sequence.push({ kind: 'attack', state: cloneState(next) });
+    });
+
+    if (!foundTarget) {
+      pushLog(next, 'Boss Attack', 'Arasaka found no exposed targets.');
+      sequence.push({ kind: 'no-targets', state: cloneState(next) });
+    }
+
+    checkAlertLoss(next);
+    if (next.status === STATUSES.LOST) {
+      sequence.push({ kind: 'game-over', state: cloneState(next) });
+      return sequence;
+    }
+
+    refreshTurn(next);
+    sequence.push({ kind: 'refresh', state: cloneState(next) });
+    return sequence;
+  }
+
   function selectCard(state, cardId) {
     const handCard = findHandCard(state, cardId);
     if (handCard) {
       state.selectedCardId = cardId;
+      state.selectedGigId = null;
       state.selectedTargetId = null;
       if (state.phase !== PHASES.PLAYER_ATTACK) state.selectedAttackerId = null;
       return;
@@ -379,22 +590,42 @@
 
     const playerCard = state.player.board.find(card => card.instanceId === cardId);
     if (playerCard) {
-      if (state.phase === PHASES.PLAYER_ATTACK && playerCard.ready) {
+      if (state.phase === PHASES.PLAYER_ATTACK) {
         beginAttack(state, cardId);
       } else {
         state.selectedCardId = cardId;
+        state.selectedGigId = null;
       }
       return;
     }
 
     const bossCard = state.boss.board.find(card => card.instanceId === cardId);
-    if (bossCard) state.selectedCardId = cardId;
+    if (bossCard) {
+      state.selectedCardId = cardId;
+      state.selectedGigId = null;
+    }
   }
 
   function selectTarget(state, targetId, immediate) {
     if (!legalTargetIds(state).includes(targetId)) return;
     state.selectedTargetId = targetId;
     if (immediate) resolveAttack(state, targetId);
+  }
+
+  function attemptBlockedGig(state, gigId) {
+    if (state.phase !== PHASES.PLAYER_ATTACK || !bossHasActiveDefenders(state)) return;
+    const gig = state.gigs.find(entry => entry.id === gigId && !entry.isSecured);
+    if (!gig) return;
+    pushLog(state, 'Gig Blocked', 'Defenders block access to the Gig.');
+  }
+
+  function selectGig(state, gigId) {
+    const gig = state.gigs.find(entry => entry.id === gigId);
+    if (!gig || gig.isSecured) return;
+    state.selectedCardId = null;
+    state.selectedGigId = gigId;
+    state.selectedTargetId = null;
+    if (state.phase !== PHASES.PLAYER_ATTACK) state.selectedAttackerId = null;
   }
 
   function soloGameReducer(currentState, action, context) {
@@ -411,11 +642,25 @@
       case ACTIONS.SELECT_CARD:
         selectCard(next, action.cardId);
         break;
+      case ACTIONS.SELECT_GIG:
+        selectGig(next, action.gigId);
+        break;
       case ACTIONS.PLAY_CARD:
         if (next.status === STATUSES.PLAYING) playCard(next, action.cardId || next.selectedCardId);
         break;
       case ACTIONS.SELL_FOR_EDDIE:
         if (next.status === STATUSES.PLAYING) sellCardForEddie(next, action.cardId || next.selectedCardId);
+        break;
+      case ACTIONS.SECURE_SELECTED_GIG:
+        break;
+      case ACTIONS.SPAWN_FIREWALL_DRONE:
+        if (next.status === STATUSES.PLAYING) spawnBossDefender(next, 'firewallDrone');
+        break;
+      case ACTIONS.SPAWN_LOCKDOWN_ENFORCER:
+        if (next.status === STATUSES.PLAYING) spawnBossDefender(next, 'lockdownEnforcer');
+        break;
+      case ACTIONS.ATTEMPT_BLOCKED_GIG:
+        attemptBlockedGig(next, action.gigId);
         break;
       case ACTIONS.BEGIN_ATTACK:
         beginAttack(next, action.cardId || next.selectedCardId);
@@ -431,7 +676,7 @@
           clearSelections(next);
           next.phase = PHASES.PLAYER_ATTACK;
           next.currentPhase = 'attack';
-          pushLog(next, 'Attack Phase', 'Select a ready unit, then pick a legal target.');
+          pushLog(next, 'Attack Phase', 'Select a ready Unit that was not played this turn, then pick an open Gig.');
         }
         break;
       case ACTIONS.END_TURN:
@@ -451,8 +696,10 @@
   window.SoloGameReducer = {
     createInitialState,
     soloGameReducer,
+    buildBossTurnSequence,
     legalTargetIds,
     canPlayCard,
+    canAttackWithUnit,
     securedGigCount,
     canSellCard,
     countReadyEddies,

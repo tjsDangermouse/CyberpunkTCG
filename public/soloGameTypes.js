@@ -18,8 +18,13 @@
     RESET_PROTOTYPE: 'reset-prototype',
     START_RUN: 'start-run',
     SELECT_CARD: 'select-card',
+    SELECT_GIG: 'select-gig',
     PLAY_CARD: 'play-card',
     SELL_FOR_EDDIE: 'sell-for-eddie',
+    SECURE_SELECTED_GIG: 'secure-selected-gig',
+    SPAWN_FIREWALL_DRONE: 'spawn-firewall-drone',
+    SPAWN_LOCKDOWN_ENFORCER: 'spawn-lockdown-enforcer',
+    ATTEMPT_BLOCKED_GIG: 'attempt-blocked-gig',
     BEGIN_ATTACK: 'begin-attack',
     SELECT_TARGET: 'select-target',
     CONFIRM_ATTACK: 'confirm-attack',
@@ -29,7 +34,7 @@
 
   window.SoloGameTypes = {
     PLAYER_HP: 18,
-    STARTING_HAND: 5,
+    STARTING_HAND: 6,
     OBJECTIVES_TO_WIN: 3,
     BOARD_LIMIT: 5,
     MAX_LOG: 18,

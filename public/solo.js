@@ -3,6 +3,18 @@ const CardUtils = window.SoloCardUtils;
 const Bosses = window.SoloBosses;
 const Game = window.SoloGameReducer;
 const PLAYER_AREA_PADDING = 12;
+const SOLO_DEBUG_CONTROLS = false;
+const BOSS_STEP_DELAYS = {
+  alert: 320,
+  spawn: 460,
+  'attack-start': 260,
+  attack: 520,
+  'no-targets': 380,
+  'game-over': 420,
+  refresh: 220,
+};
+const COMBAT_MOVE_DURATION = 260;
+const COMBAT_RETURN_DURATION = 150;
 
 let cardsBySlug = new Map();
 let state = null;
@@ -18,6 +30,8 @@ let ui = {
   gigPulseIds: new Set(),
   logOpen: false,
   alertPulse: false,
+  bossResolving: false,
+  bossStepTimer: null,
   suppressClickId: null,
   areaPositions: {
     playerCards: {},
@@ -59,6 +73,9 @@ const elements = {
   startBtn: document.getElementById('start-btn'),
   playBtn: document.getElementById('play-btn'),
   sellEddieBtn: document.getElementById('sell-eddie-btn'),
+  secureGigBtn: document.getElementById('secure-gig-btn'),
+  spawnFirewallBtn: document.getElementById('spawn-firewall-btn'),
+  spawnEnforcerBtn: document.getElementById('spawn-enforcer-btn'),
   endPhaseBtn: document.getElementById('end-phase-btn'),
   endTurnBtn: document.getElementById('end-turn-btn'),
   attackBtn: document.getElementById('attack-btn'),
@@ -142,7 +159,7 @@ function cardIsSelected(cardId) {
 }
 
 function selectedTargetIsGig(gigId) {
-  return state.selectedTargetId === gigId;
+  return state.selectedGigId === gigId || state.selectedTargetId === gigId;
 }
 
 function legalTargetIds() {
@@ -168,7 +185,7 @@ function canSellSelected() {
 function canBeginAttack(cardId) {
   if (state.phase !== PHASES.PLAYER_ATTACK || state.status !== STATUSES.PLAYING) return false;
   const card = state.player.board.find(entry => entry.instanceId === cardId);
-  return Boolean(card && card.ready);
+  return Boolean(card && Game.canAttackWithUnit(state, card));
 }
 
 function rebuildPresentationalLookup() {
@@ -181,10 +198,11 @@ function rebuildPresentationalLookup() {
 function renderCard(card, options = {}) {
   const imgSrc = CardUtils.getCardArt(card);
   const isBoardRuntimeCard = Number.isFinite(card?.currentHp) && Number.isFinite(card?.maxHp);
+  const isBossCard = card.owner === 'boss';
   const classes = [
     'solo-card',
     options.hand ? 'hand-card' : '',
-    card.owner === 'boss' ? 'boss-asset-card' : '',
+    isBossCard ? 'boss-asset-card' : '',
     !options.hand && card.ready === false ? 'exhausted' : '',
     isBoardRuntimeCard && card.currentHp < card.maxHp ? 'damaged' : '',
     card.flash || '',
@@ -208,6 +226,36 @@ function renderCard(card, options = {}) {
           ${imgSrc
             ? `<img src="${imgSrc}" alt="${CardUtils.getCardName(card)}" loading="lazy" draggable="false" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder&quot;>No Art</div>'">`
             : `<div class="solo-card-placeholder">No Art</div>`}
+        </div>
+      </article>
+    `;
+  }
+
+  if (isBossCard) {
+    return `
+      <article class="${classes}"${cardIdAttr}${tabIndexAttr}>
+        <div class="solo-card-art boss-card-art">
+          ${imgSrc
+            ? `<img src="${imgSrc}" alt="${CardUtils.getCardName(card)}" loading="lazy" draggable="false" onerror="this.parentElement.innerHTML='<div class=&quot;solo-card-placeholder&quot;>Boss Asset</div>'">`
+            : `<div class="solo-card-placeholder">Boss Asset</div>`}
+          <div class="boss-card-topline">
+            ${CardUtils.getCardType(card) ? `<span class="type-badge ${typeClass(CardUtils.getCardType(card))}">${CardUtils.getCardType(card)}</span>` : ''}
+          </div>
+        </div>
+        <div class="solo-card-body boss-card-body">
+          <div class="boss-card-nameplate">
+            <h3>${CardUtils.getCardName(card)}</h3>
+            <div class="solo-card-sub">${CardUtils.getCardSubtitle(card) || '&nbsp;'}</div>
+          </div>
+          <div class="boss-card-rules">
+            <p class="solo-card-text">${CardUtils.getCardText(card) || 'Prototype solo asset.'}</p>
+          </div>
+          <div class="boss-card-footer">
+            <div class="card-stats">
+              ${statChip('PWR', CardUtils.getCardPower(card), 'stat-power')}
+              ${statChip('HP', card.currentHp, 'stat-ram')}
+            </div>
+          </div>
         </div>
       </article>
     `;
@@ -262,6 +310,14 @@ function renderZoneCards(container, cards, options = {}) {
 function renderBossCore() {
   const alertWidth = `${(state.boss.alert / 10) * 100}%`;
   elements.bossCore.className = `boss-core ${state.boss.lockdownActive ? 'lockdown-active' : ''}`.trim();
+  const thresholdLabel = value => {
+    if (value === 1 || value === 3) return `${value} Drone`;
+    if (value === 5) return '5 Enforcer';
+    if (value === 7) return '7 Dual';
+    if (value === 9) return '9 Lock';
+    if (value === 10) return '10 Lose';
+    return `${value}`;
+  };
   elements.bossCore.innerHTML = `
     <div class="boss-core-title">
       <div>
@@ -269,20 +325,23 @@ function renderBossCore() {
         <h3>${Bosses.bossDefinition.name}</h3>
         <p class="solo-card-sub">${Bosses.bossDefinition.title}</p>
       </div>
-      <span class="state-pill">Alert ${state.boss.alert} / 10</span>
+      <div class="boss-core-state">
+        <span class="state-pill">Alert ${state.boss.alert} / 10</span>
+        ${state.boss.lockdownActive ? '<span class="state-pill lockdown-pill">Lockdown Active</span>' : ''}
+      </div>
     </div>
     <div class="alert-meter">
       <div class="alert-bar"><div class="alert-fill ${ui.alertPulse ? 'alert-pulse' : ''}" style="width:${alertWidth}"></div></div>
       <div class="alert-thresholds">
         ${Bosses.bossDefinition.thresholds.map(value => `
           <span class="threshold-pill ${state.boss.alert >= value ? 'reached' : ''}">
-            ${value === 9 ? '9 Lock' : value === 10 ? '10 Lose' : `${value} Spawn`}
+            ${thresholdLabel(value)}
           </span>
         `).join('')}
       </div>
     </div>
     <div class="boss-rules">
-      <div>${state.boss.lockdownActive ? 'Lockdown active.' : 'Lockdown begins at Alert 9.'}</div>
+      <div>${state.boss.lockdownActive ? 'LOCKDOWN PROTOCOL ACTIVE.' : 'Lockdown begins at Alert 9.'}</div>
       <div>${state.boss.board.length > 0 ? `${state.boss.board.length} defenders online.` : 'No defenders currently deployed.'}</div>
     </div>
   `;
@@ -411,16 +470,17 @@ function renderObjectives() {
   const legalGigs = new Set(legalTargetIds());
   elements.objectiveZone.innerHTML = state.gigs.map((gig, index) => `
     <article
-      class="objective-card ${gig.claimedBy === 'player' ? 'player' : ''} ${legalGigs.has(gig.id) ? 'targetable' : ''} ${selectedTargetIsGig(gig.id) ? 'selected' : ''} ${ui.gigPulseIds.has(gig.id) ? 'gig-pulse' : ''}"
+      class="objective-card ${gig.isSecured ? 'player secured' : ''} ${legalGigs.has(gig.id) ? 'targetable' : ''} ${selectedTargetIsGig(gig.id) ? 'selected' : ''} ${ui.gigPulseIds.has(gig.id) ? 'gig-pulse' : ''}"
       data-gig-id="${gig.id}"
       tabindex="0"
     >
       <p class="zone-label">Gig ${index + 1}</p>
       <h3>${gig.name}</h3>
       <p class="solo-card-text">${gig.reward}</p>
+      ${gig.isSecured ? '<div class="objective-stamp">SECURED</div>' : ''}
       <div class="objective-status">
-        <span>${gig.claimedBy === 'player' ? 'Secured by player' : 'Still protected by Arasaka'}</span>
-        <strong>${gig.claimedBy === 'player' ? 'Claimed' : 'Open'}</strong>
+        <span>${gig.isSecured ? `Secured on turn ${gig.securedTurn}` : 'Objective available for extraction'}</span>
+        <strong>${gig.isSecured ? 'SECURED' : 'Open'}</strong>
       </div>
     </article>
   `).join('');
@@ -442,7 +502,7 @@ function renderStatus() {
     <div class="status-item"><span>Alert</span><strong>${state.boss.alert}</strong></div>
     <div class="status-item"><span>Deck</span><strong>${state.player.deck.length}</strong></div>
     <div class="status-item"><span>Hand</span><strong>${state.player.hand.length}</strong></div>
-    <div class="status-item"><span>Gigs</span><strong>${Game.securedGigCount(state)} / ${OBJECTIVES_TO_WIN}</strong></div>
+    <div class="status-item"><span>Secured Gigs</span><strong>${Game.securedGigCount(state)} / ${OBJECTIVES_TO_WIN}</strong></div>
     <div class="status-item"><span>Discard</span><strong>${state.player.discard.length}</strong></div>
     <div class="status-item"><span>Focus</span><strong>${selected.replace(/^Selected: |^Attacker: /, '')}</strong></div>
   `;
@@ -635,13 +695,13 @@ function renderMeta() {
   if (state.status === STATUSES.WON || state.status === STATUSES.LOST) {
     elements.runSummary.textContent = state.gameOverReason;
   } else if (state.mode === 'pregame') {
-    elements.runSummary.textContent = 'Start a run, deploy units, secure three gigs, and survive the lockdown.';
+    elements.runSummary.textContent = 'Start a run, select Gigs in the center lane, and secure three to complete the run.';
   } else if (state.phase === PHASES.PLAYER_ATTACK) {
     elements.runSummary.textContent = state.boss.board.length > 0
-      ? 'Defenders are up. Pick a ready unit and attack through the board first.'
-      : 'No defenders remain. A clean hit secures an open gig.';
+      ? 'Defenders are active. Clear the Boss Field before you can secure any Gigs.'
+      : 'Pick a ready Unit that was not played this turn, target an open Gig, and secure it.';
   } else {
-    elements.runSummary.textContent = 'Sell one hand card for an Eddie during Play, spend ready Eddies to deploy units, and manage Alert before the boss turn.';
+    elements.runSummary.textContent = 'Sell one hand card for an Eddie, deploy Units, then move into Attack Phase to secure open Gigs.';
   }
 
   Object.values(elements.phaseChips).forEach(chip => chip.classList.remove('active'));
@@ -656,14 +716,14 @@ function deriveNextMove() {
   if (state.mode === 'pregame') {
     return {
       title: 'Start the run',
-      text: 'Press Start Run to shuffle your deck, draw five cards, and begin the encounter.',
+      text: 'Press Start Run to shuffle your deck, draw six cards, and begin the encounter.',
     };
   }
 
   if (state.status === STATUSES.WON) {
     return {
       title: 'Run complete',
-      text: 'You secured all three gigs. Press Restart Run to play again.',
+      text: 'Run complete. You escaped with the Gigs. Press Restart Run to play again.',
     };
   }
 
@@ -694,12 +754,12 @@ function deriveNextMove() {
       };
     }
 
-    if (affordableBoardCard || sellableCard) {
+    if (affordableBoardCard || sellableCard || state.gigs.some(gig => !gig.isSecured)) {
       return {
-        title: 'Choose a hand card',
-        text: state.hasSoldThisTurn
-          ? 'Click a card in your hand, then press Play if you have enough ready Eddies to cover its cost.'
-          : 'Click a card in your hand, then either Play it by spending ready Eddies or Sell it for 1 Eddie.',
+        title: 'Prepare for attacks',
+        text: state.gigs.some(gig => !gig.isSecured)
+          ? 'Deploy Units and press Go to Attack Phase when you are ready to secure open Gigs.'
+          : 'All visible Gigs are secured. Use the enabled controls to continue.',
       };
     }
 
@@ -719,18 +779,18 @@ function deriveNextMove() {
   if (state.phase === PHASES.PLAYER_ATTACK) {
     const legalTargets = legalTargetIds();
     if (!state.selectedAttackerId) {
-      const readyUnit = state.player.board.find(card => card.ready);
+      const readyUnit = state.player.board.find(card => Game.canAttackWithUnit(state, card));
       if (readyUnit) {
         return {
           title: 'Choose an attacker',
-          text: legalTargets.length > 0 && state.boss.board.length > 0
-            ? 'Click a ready unit on your board, then click a glowing defender to attack it.'
-            : 'Click a ready unit on your board. If no defenders remain, that unit can secure a glowing open gig.',
+          text: state.boss.board.length > 0
+            ? 'Click a ready Unit that was not played this turn, then target a glowing Boss defender.'
+            : 'Click a ready Unit that was not played this turn, then click a glowing open Gig.',
         };
       }
       return {
         title: 'No attacks available',
-        text: 'You have no ready units. Press End Turn to hand play to Arasaka.',
+        text: 'You have no eligible Units to attack with. Press End Turn to refresh for the next turn.',
       };
     }
 
@@ -739,15 +799,17 @@ function deriveNextMove() {
       return {
         title: 'Choose a target',
         text: state.boss.board.length > 0
-          ? `Click a glowing defender to attack with ${CardUtils.getCardName(attacker)}.`
-          : `Click a glowing open gig to secure it with ${CardUtils.getCardName(attacker)}.`,
+          ? `Click a glowing Boss defender to attack with ${CardUtils.getCardName(attacker)}.`
+          : `Click a glowing open Gig to secure it with ${CardUtils.getCardName(attacker)}.`,
       };
     }
 
     if (state.selectedTargetId) {
       return {
-        title: 'Resolve the attack',
-        text: 'Press Confirm Target to resolve the selected attack, or choose a different legal target.',
+        title: state.boss.board.length > 0 ? 'Attack Defender' : 'Attack / Secure Gig',
+        text: state.boss.board.length > 0
+          ? 'Press Attack / Secure Gig to resolve combat with the selected defender.'
+          : 'Press Attack / Secure Gig to resolve the selected Gig attack, or choose a different open Gig.',
       };
     }
   }
@@ -755,7 +817,9 @@ function deriveNextMove() {
   if (state.phase === PHASES.BOSS_TURN) {
     return {
       title: 'Boss resolving',
-      text: 'Arasaka is executing its defense step. Wait for the board to refresh back to your main phase.',
+      text: ui.bossResolving
+        ? 'Arasaka is resolving Alert, deployments, and attacks. Watch the board state update before your next turn begins.'
+        : 'Alert advances, Arasaka deploys defenders from Alert rules, then play refreshes back to your main phase.',
     };
   }
 
@@ -774,14 +838,23 @@ function renderNextMove() {
 function renderControls() {
   const selectedBoardCard = state.player.board.find(card => card.instanceId === state.selectedCardId);
   const selectedTargetLegal = legalTargetIds().includes(state.selectedTargetId);
+  const controlsLocked = ui.bossResolving;
 
-  elements.startBtn.disabled = state.mode !== 'pregame';
-  elements.playBtn.disabled = !canPlaySelected();
-  elements.sellEddieBtn.disabled = !canSellSelected();
-  elements.endPhaseBtn.disabled = !(state.phase === PHASES.PLAYER_MAIN && state.status === STATUSES.PLAYING);
-  elements.endTurnBtn.disabled = !(state.phase === PHASES.PLAYER_ATTACK && state.status === STATUSES.PLAYING);
-  elements.attackBtn.disabled = !(selectedBoardCard && canBeginAttack(selectedBoardCard.instanceId));
-  elements.confirmTargetBtn.disabled = !(state.selectedAttackerId && selectedTargetLegal);
+  elements.startBtn.disabled = controlsLocked || state.mode !== 'pregame';
+  elements.playBtn.disabled = controlsLocked || !canPlaySelected();
+  elements.sellEddieBtn.disabled = controlsLocked || !canSellSelected();
+  elements.secureGigBtn.hidden = true;
+  elements.spawnFirewallBtn.hidden = !SOLO_DEBUG_CONTROLS;
+  elements.spawnEnforcerBtn.hidden = !SOLO_DEBUG_CONTROLS;
+  elements.spawnFirewallBtn.disabled = controlsLocked || !(state.mode === 'active' && state.status === STATUSES.PLAYING);
+  elements.spawnEnforcerBtn.disabled = controlsLocked || !(state.mode === 'active' && state.status === STATUSES.PLAYING);
+  elements.endPhaseBtn.disabled = controlsLocked || !(state.phase === PHASES.PLAYER_MAIN && state.status === STATUSES.PLAYING);
+  elements.endTurnBtn.disabled = controlsLocked || !(state.phase === PHASES.PLAYER_ATTACK && state.status === STATUSES.PLAYING);
+  elements.attackBtn.disabled = controlsLocked || !(selectedBoardCard && canBeginAttack(selectedBoardCard.instanceId));
+  elements.confirmTargetBtn.disabled = controlsLocked || !(state.selectedAttackerId && selectedTargetLegal);
+  elements.endPhaseBtn.textContent = 'Go to Attack Phase';
+  elements.confirmTargetBtn.textContent = 'Attack / Secure Gig';
+  elements.endTurnBtn.textContent = ui.bossResolving ? 'Boss Resolving...' : 'End Turn';
 }
 
 function renderGameOverOverlay() {
@@ -894,7 +967,7 @@ function captureTransitionPulses(previousState, nextState) {
   ui.gigPulseIds = new Set();
   if (previousState) {
     nextState.gigs.forEach((gig, index) => {
-      if (gig.claimedBy === 'player' && previousState.gigs[index]?.claimedBy !== 'player') {
+      if (gig.isSecured && !previousState.gigs[index]?.isSecured) {
         ui.gigPulseIds.add(gig.id);
       }
     });
@@ -918,10 +991,133 @@ function captureTransitionPulses(previousState, nextState) {
 function dispatch(action) {
   const previousState = state;
   const nextState = Game.soloGameReducer(state, action, { cardsBySlug });
+  applyResolvedState(previousState, nextState);
+}
+
+function latestCombatEvent(previousState, nextState) {
+  const previousSeq = Number(previousState?.lastCombat?.seq || 0);
+  const nextSeq = Number(nextState?.lastCombat?.seq || 0);
+  if (!nextSeq || nextSeq === previousSeq) return null;
+  return nextState.lastCombat;
+}
+
+function cardRectForAnimation(cardId) {
+  if (!cardId) return null;
+  const node = document.querySelector(`[data-card-id="${cardId}"]`);
+  if (!node) return null;
+  const rect = node.getBoundingClientRect();
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+    centerX: rect.left + (rect.width / 2),
+    centerY: rect.top + (rect.height / 2),
+  };
+}
+
+function animateCombatHit(previousState, nextState) {
+  const combat = latestCombatEvent(previousState, nextState);
+  if (!combat) return;
+
+  const sourceRect = cardRectForAnimation(combat.attackerId);
+  const targetRect = cardRectForAnimation(combat.targetId);
+  if (!sourceRect || !targetRect) return;
+
+  const sourceNode = document.querySelector(`[data-card-id="${combat.attackerId}"]`);
+  if (!sourceNode) return;
+
+  const ghost = sourceNode.cloneNode(true);
+  ghost.classList.add('combat-ghost');
+  ghost.style.position = 'fixed';
+  ghost.style.left = `${sourceRect.left}px`;
+  ghost.style.top = `${sourceRect.top}px`;
+  ghost.style.width = `${sourceRect.width}px`;
+  ghost.style.minWidth = `${sourceRect.width}px`;
+  ghost.style.height = `${sourceRect.height}px`;
+  ghost.style.margin = '0';
+  ghost.style.zIndex = '930';
+  ghost.removeAttribute('data-card-id');
+  document.body.appendChild(ghost);
+
+  const impact = document.createElement('div');
+  impact.className = 'combat-impact';
+  impact.style.left = `${targetRect.centerX}px`;
+  impact.style.top = `${targetRect.centerY}px`;
+  document.body.appendChild(impact);
+
+  const deltaX = targetRect.centerX - sourceRect.centerX;
+  const deltaY = targetRect.centerY - sourceRect.centerY;
+  const distance = Math.hypot(deltaX, deltaY) || 1;
+  const stopX = deltaX * Math.max(0, (distance - Math.min(targetRect.width, targetRect.height) * 0.34) / distance);
+  const stopY = deltaY * Math.max(0, (distance - Math.min(targetRect.width, targetRect.height) * 0.34) / distance);
+
+  ghost.animate([
+    { transform: 'translate3d(0, 0, 0) scale(1)', offset: 0 },
+    { transform: `translate3d(${stopX}px, ${stopY}px, 0) scale(1.03)`, offset: 0.68 },
+    { transform: `translate3d(${stopX * 0.92}px, ${stopY * 0.92}px, 0) scale(0.98)`, offset: 0.78 },
+    { transform: 'translate3d(0, 0, 0) scale(1)', offset: 1 },
+  ], {
+    duration: COMBAT_MOVE_DURATION + COMBAT_RETURN_DURATION,
+    easing: 'cubic-bezier(0.2, 0.8, 0.22, 1)',
+    fill: 'forwards',
+  });
+
+  window.setTimeout(() => {
+    ghost.remove();
+    impact.remove();
+  }, COMBAT_MOVE_DURATION + COMBAT_RETURN_DURATION + 80);
+}
+
+function applyResolvedState(previousState, nextState) {
+  animateCombatHit(previousState, nextState);
   animateCardExits(previousState, nextState);
   captureTransitionPulses(previousState, nextState);
   state = nextState;
   render();
+}
+
+function clearBossResolveTimer() {
+  if (!ui.bossStepTimer) return;
+  window.clearTimeout(ui.bossStepTimer);
+  ui.bossStepTimer = null;
+}
+
+function runBossTurnSequence(sequence) {
+  if (!Array.isArray(sequence) || sequence.length === 0) {
+    dispatch({ type: ACTIONS.END_TURN });
+    return;
+  }
+
+  clearBossResolveTimer();
+  ui.bossResolving = true;
+
+  const advance = index => {
+    const frame = sequence[index];
+    if (!frame) {
+      ui.bossResolving = false;
+      render();
+      return;
+    }
+
+    applyResolvedState(state, frame.state);
+    const delay = BOSS_STEP_DELAYS[frame.kind] ?? 360;
+
+    if (index === sequence.length - 1) {
+      ui.bossStepTimer = window.setTimeout(() => {
+        ui.bossResolving = false;
+        ui.bossStepTimer = null;
+        render();
+      }, delay);
+      return;
+    }
+
+    ui.bossStepTimer = window.setTimeout(() => {
+      advance(index + 1);
+    }, delay);
+  };
+
+  advance(0);
 }
 
 function beginPlayerAreaDrag(node, itemType, id, event) {
@@ -1005,6 +1201,7 @@ function attachInteractions() {
     };
 
     node.onclick = () => {
+      if (ui.bossResolving) return;
       const cardId = node.dataset.cardId;
       if (ui.suppressClickId === `card:${cardId}`) {
         ui.suppressClickId = null;
@@ -1018,7 +1215,7 @@ function attachInteractions() {
 
       const legalTargets = legalTargetIds();
       if (legalTargets.includes(cardId)) {
-        dispatch({ type: ACTIONS.SELECT_TARGET, targetId: cardId, immediate: true });
+        dispatch({ type: ACTIONS.SELECT_TARGET, targetId: cardId, immediate: false });
         return;
       }
 
@@ -1093,6 +1290,7 @@ function attachInteractions() {
   document.querySelectorAll('[data-eddie-id]').forEach(node => {
     node.onpointerdown = event => beginPlayerAreaDrag(node, 'eddie', node.dataset.eddieId, event);
     node.onclick = () => {
+      if (ui.bossResolving) return;
       const eddieId = node.dataset.eddieId;
       if (ui.suppressClickId === `eddie:${eddieId}`) {
         ui.suppressClickId = null;
@@ -1111,9 +1309,14 @@ function attachInteractions() {
       updateInteractionLine();
     };
     node.onclick = () => {
+      if (ui.bossResolving) return;
       const gigId = node.dataset.gigId;
       if (legalTargetIds().includes(gigId)) {
-        dispatch({ type: ACTIONS.SELECT_TARGET, targetId: gigId, immediate: true });
+        dispatch({ type: ACTIONS.SELECT_TARGET, targetId: gigId, immediate: false });
+        return;
+      }
+      if (state.phase === PHASES.PLAYER_ATTACK && state.boss.board.length > 0) {
+        dispatch({ type: ACTIONS.ATTEMPT_BLOCKED_GIG, gigId });
       }
     };
   });
@@ -1149,10 +1352,20 @@ function wireControls() {
   elements.startBtn.onclick = () => dispatch({ type: ACTIONS.START_RUN });
   elements.playBtn.onclick = () => dispatch({ type: ACTIONS.PLAY_CARD, cardId: state.selectedCardId });
   elements.sellEddieBtn.onclick = () => dispatch({ type: ACTIONS.SELL_FOR_EDDIE, cardId: state.selectedCardId });
+  elements.spawnFirewallBtn.onclick = () => dispatch({ type: ACTIONS.SPAWN_FIREWALL_DRONE });
+  elements.spawnEnforcerBtn.onclick = () => dispatch({ type: ACTIONS.SPAWN_LOCKDOWN_ENFORCER });
   elements.endPhaseBtn.onclick = () => dispatch({ type: ACTIONS.END_PHASE });
   elements.attackBtn.onclick = () => dispatch({ type: ACTIONS.BEGIN_ATTACK, cardId: state.selectedCardId });
   elements.confirmTargetBtn.onclick = () => dispatch({ type: ACTIONS.CONFIRM_ATTACK });
-  elements.endTurnBtn.onclick = () => dispatch({ type: ACTIONS.END_TURN });
+  elements.endTurnBtn.onclick = () => {
+    if (ui.bossResolving) return;
+    if (state.phase === PHASES.PLAYER_ATTACK && state.status === STATUSES.PLAYING) {
+      const sequence = Game.buildBossTurnSequence(state, { cardsBySlug });
+      runBossTurnSequence(sequence);
+      return;
+    }
+    dispatch({ type: ACTIONS.END_TURN });
+  };
   elements.resetBtn.onclick = () => dispatch({ type: ACTIONS.RESET_PROTOTYPE });
   elements.restartRunBtn.onclick = () => dispatch({ type: ACTIONS.START_RUN });
   elements.logToggleBtn.onclick = () => {
